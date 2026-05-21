@@ -1,0 +1,8 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_qs2_visit_user,qs2.visit.user,model_qs2_visit,base.group_user,1,0,0,0
+access_qs2_visit_manager,qs2.visit.manager,model_qs2_visit,base.group_system,1,1,1,1
+access_qs2_visit_public,qs2.visit.public,model_qs2_visit,base.group_public,1,0,1,0
+access_qs2_tracking_milestone_user,qs2.tracking.milestone.user,model_qs2_tracking_milestone,base.group_user,1,0,0,0
+access_qs2_tracking_milestone_manager,qs2.tracking.milestone.manager,model_qs2_tracking_milestone,base.group_system,1,1,1,1
+access_qs2_tracking_rule_user,qs2.tracking.rule.user,model_qs2_tracking_rule,base.group_user,1,0,0,0
+access_qs2_tracking_rule_manager,qs2.tracking.rule.manager,model_qs2_tracking_rule,base.group_system,1,1,1,1

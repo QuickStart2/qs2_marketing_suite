@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_crm_lead_form_inherit_tracking" model="ir.ui.view">
+        <field name="name">crm.lead.form.inherit.qs2.tracking</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_lead_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@name='lead_partner']" position="after">
+                <group string="Web Tracking" name="qs2_tracking">
+                    <field name="qs2_tracking_code" widget="CopyClipboardChar"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_crm_lead_tree_inherit_tracking" model="ir.ui.view">
+        <field name="name">crm.lead.tree.inherit.qs2.tracking</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_case_tree_view_leads"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='country_id']" position="after">
+                <field name="qs2_tracking_code" optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

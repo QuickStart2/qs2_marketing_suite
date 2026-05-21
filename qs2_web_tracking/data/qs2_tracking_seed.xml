@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <!-- ============================================================ -->
+    <!-- Milestone di esempio                                          -->
+    <!-- ============================================================ -->
+    <record id="milestone_webinar_1" model="qs2.tracking.milestone">
+        <field name="name">Visto Webinar 1</field>
+        <field name="description">Il contatto ha visitato la landing del Webinar 1.</field>
+        <field name="color">3</field>
+        <field name="sequence">10</field>
+    </record>
+
+    <record id="milestone_webinar_2" model="qs2.tracking.milestone">
+        <field name="name">Visto Webinar 2</field>
+        <field name="description">Il contatto ha visitato la landing del Webinar 2.</field>
+        <field name="color">5</field>
+        <field name="sequence">20</field>
+    </record>
+
+    <record id="milestone_webinar_3" model="qs2.tracking.milestone">
+        <field name="name">Visto Webinar 3</field>
+        <field name="description">Il contatto ha visitato la landing del Webinar 3 — completato funnel.</field>
+        <field name="color">10</field>
+        <field name="sequence">30</field>
+    </record>
+
+    <record id="milestone_pricing" model="qs2.tracking.milestone">
+        <field name="name">Visitata pagina prezzi</field>
+        <field name="description">Il contatto ha cercato attivamente i prezzi — alto intent commerciale.</field>
+        <field name="color">8</field>
+        <field name="sequence">40</field>
+    </record>
+
+    <!-- ============================================================ -->
+    <!-- Regole URL → milestone                                        -->
+    <!-- ============================================================ -->
+    <record id="rule_webinar_1" model="qs2.tracking.rule">
+        <field name="name">Webinar 1 (URL)</field>
+        <field name="url_pattern">/webinar-1</field>
+        <field name="milestone_id" ref="milestone_webinar_1"/>
+        <field name="sequence">10</field>
+    </record>
+
+    <record id="rule_webinar_2" model="qs2.tracking.rule">
+        <field name="name">Webinar 2 (URL)</field>
+        <field name="url_pattern">/webinar-2</field>
+        <field name="milestone_id" ref="milestone_webinar_2"/>
+        <field name="sequence">20</field>
+    </record>
+
+    <record id="rule_webinar_3" model="qs2.tracking.rule">
+        <field name="name">Webinar 3 (URL)</field>
+        <field name="url_pattern">/webinar-3</field>
+        <field name="milestone_id" ref="milestone_webinar_3"/>
+        <field name="sequence">30</field>
+    </record>
+
+    <record id="rule_pricing" model="qs2.tracking.rule">
+        <field name="name">Pagina prezzi</field>
+        <field name="url_pattern">/prezzi|/pricing|/listino</field>
+        <field name="is_regex" eval="True"/>
+        <field name="milestone_id" ref="milestone_pricing"/>
+        <field name="sequence">40</field>
+    </record>
+
+</odoo>

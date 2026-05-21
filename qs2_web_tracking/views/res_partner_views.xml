@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_partner_form_tracking" model="ir.ui.view">
+        <field name="name">res.partner.form.qs2.tracking</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_visits"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-eye">
+                    <field name="qs2_visit_count" widget="statinfo"
+                           string="Visite"/>
+                </button>
+            </xpath>
+
+            <xpath expr="//notebook" position="inside">
+                <page string="Web Tracking" name="qs2_tracking">
+                    <group>
+                        <group string="Tracking">
+                            <field name="qs2_tracking_code"
+                                   widget="CopyClipboardChar"/>
+                        </group>
+                        <group string="Statistiche">
+                            <field name="qs2_visit_count" readonly="1"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+
+        </field>
+    </record>
+
+    <record id="view_partner_tree_tracking" model="ir.ui.view">
+        <field name="name">res.partner.tree.qs2.tracking</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='email']" position="after">
+                <field name="qs2_visit_count" optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>
