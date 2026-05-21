@@ -1,0 +1,152 @@
+// QS2 Marketing Insights — timeline verticale per crm.lead
+
+// Palette per gruppo evento — riusa colori dei moduli QS2 originali
+$qs2-color-marketing: #E91E63; // pink — qs2_marketing_suite_base
+$qs2-color-tracking:  #FF5722; // orange — qs2_web_tracking
+$qs2-color-comm:      #4CAF50; // green — qs2_whatsapp_bridge
+$qs2-color-crm:       #607D8B; // blue-grey — generic CRM
+$qs2-color-sales:     #2196F3; // blue — sales
+$qs2-color-billing:   #9C27B0; // purple — invoice
+
+$qs2-rail-width: 3rem;
+$qs2-dot-size: 2rem;
+
+.qs2_timeline_root {
+    padding: 0.5rem;
+
+    // ----- Chip filtri ------
+    .qs2_timeline_chip {
+        border: 1px solid var(--bs-border-color, #dee2e6);
+        background: #fff;
+        border-radius: 999px;
+        padding: 0.25rem 0.75rem;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: all 0.15s ease;
+
+        &.inactive {
+            opacity: 0.4;
+            background: #f8f9fa;
+        }
+        &:hover { opacity: 1; }
+    }
+
+    .qs2_timeline_chip_marketing:not(.inactive) { color: $qs2-color-marketing; border-color: $qs2-color-marketing; }
+    .qs2_timeline_chip_tracking:not(.inactive)  { color: $qs2-color-tracking;  border-color: $qs2-color-tracking; }
+    .qs2_timeline_chip_comm:not(.inactive)      { color: $qs2-color-comm;      border-color: $qs2-color-comm; }
+    .qs2_timeline_chip_crm:not(.inactive)       { color: $qs2-color-crm;       border-color: $qs2-color-crm; }
+    .qs2_timeline_chip_sales:not(.inactive)     { color: $qs2-color-sales;     border-color: $qs2-color-sales; }
+    .qs2_timeline_chip_billing:not(.inactive)   { color: $qs2-color-billing;   border-color: $qs2-color-billing; }
+
+    // ----- Timeline -----
+    .qs2_timeline {
+        position: relative;
+        padding-left: $qs2-rail-width;
+
+        // Linea verticale continua
+        &::before {
+            content: "";
+            position: absolute;
+            left: calc(#{$qs2-rail-width} / 2 - 1px);
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--bs-border-color, #dee2e6);
+        }
+    }
+
+    .qs2_timeline_item {
+        display: flex;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+        position: relative;
+    }
+
+    .qs2_timeline_rail {
+        position: absolute;
+        left: calc(-#{$qs2-rail-width} + (#{$qs2-rail-width} - #{$qs2-dot-size}) / 2);
+        top: 0.4rem;
+        width: $qs2-dot-size;
+    }
+
+    .qs2_timeline_dot {
+        width: $qs2-dot-size;
+        height: $qs2-dot-size;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 0.85rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .qs2_timeline_card {
+        flex: 1;
+        background: #fff;
+        border: 1px solid var(--bs-border-color, #dee2e6);
+        border-radius: 0.5rem;
+        padding: 0.6rem 0.9rem;
+        position: relative;
+
+        &.clickable {
+            cursor: pointer;
+            &:hover {
+                box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+                transform: translateY(-1px);
+                transition: all 0.15s ease;
+            }
+        }
+    }
+
+    .qs2_timeline_title {
+        font-weight: 600;
+        color: #2c3e50;
+    }
+    .qs2_timeline_subtitle {
+        margin-top: 0.1rem;
+        word-break: break-word;
+    }
+    .qs2_timeline_ts {
+        white-space: nowrap;
+        font-size: 0.75rem;
+    }
+    .qs2_timeline_body {
+        padding-top: 0.5rem;
+        border-top: 1px solid #f0f0f0;
+        color: #555;
+    }
+    .qs2_timeline_expand {
+        opacity: 0.7;
+    }
+
+    // Color coding per gruppo (border-left + dot bg)
+    .qs2_group_marketing {
+        .qs2_timeline_dot { background: $qs2-color-marketing; }
+        .qs2_timeline_card { border-left: 4px solid $qs2-color-marketing; }
+    }
+    .qs2_group_tracking {
+        .qs2_timeline_dot { background: $qs2-color-tracking; }
+        .qs2_timeline_card { border-left: 4px solid $qs2-color-tracking; }
+    }
+    .qs2_group_comm {
+        .qs2_timeline_dot { background: $qs2-color-comm; }
+        .qs2_timeline_card { border-left: 4px solid $qs2-color-comm; }
+    }
+    .qs2_group_crm {
+        .qs2_timeline_dot { background: $qs2-color-crm; }
+        .qs2_timeline_card { border-left: 4px solid $qs2-color-crm; }
+    }
+    .qs2_group_sales {
+        .qs2_timeline_dot { background: $qs2-color-sales; }
+        .qs2_timeline_card { border-left: 4px solid $qs2-color-sales; }
+    }
+    .qs2_group_billing {
+        .qs2_timeline_dot { background: $qs2-color-billing; }
+        .qs2_timeline_card { border-left: 4px solid $qs2-color-billing; }
+    }
+
+    // Special highlight per outcome won/lost
+    .kind_won .qs2_timeline_card { background: #f0fdf4; border-color: $qs2-color-sales; }
+    .kind_lost .qs2_timeline_card { background: #fef2f2; border-color: #ef4444; .qs2_timeline_dot { background: #ef4444; } }
+}

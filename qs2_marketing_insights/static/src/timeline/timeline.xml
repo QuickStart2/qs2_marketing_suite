@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+<t t-name="qs2_marketing_insights.LeadTimeline">
+    <div class="qs2_timeline_root">
+
+        <!-- ============================================================ -->
+        <!-- Header: chip filtri per categoria di evento                 -->
+        <!-- ============================================================ -->
+        <div class="qs2_timeline_filters d-flex flex-wrap gap-2 mb-3">
+            <span class="text-muted small me-2 align-self-center">Mostra:</span>
+            <t t-foreach="[
+                { key: 'marketing', label: 'Marketing', icon: 'fa-bullhorn' },
+                { key: 'tracking', label: 'Tracking', icon: 'fa-eye' },
+                { key: 'comm', label: 'Comunicazioni', icon: 'fa-comments' },
+                { key: 'crm', label: 'CRM', icon: 'fa-tasks' },
+                { key: 'sales', label: 'Vendite', icon: 'fa-shopping-cart' },
+                { key: 'billing', label: 'Fatture', icon: 'fa-money' },
+            ]" t-as="grp" t-key="grp.key">
+                <button t-attf-class="qs2_timeline_chip qs2_timeline_chip_{{ grp.key }} {{ state.filterGroups[grp.key] ? '' : 'inactive' }}"
+                        t-on-click="() => this.toggleGroup(grp.key)"
+                        type="button">
+                    <i t-attf-class="fa {{ grp.icon }} me-1"/>
+                    <t t-out="grp.label"/>
+                </button>
+            </t>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- Stato vuoto / loading                                        -->
+        <!-- ============================================================ -->
+        <div t-if="state.loading" class="text-center text-muted p-4">
+            <i class="fa fa-spinner fa-spin me-2"/>Caricamento timeline…
+        </div>
+        <div t-elif="filteredEvents.length === 0" class="text-center text-muted p-4">
+            Nessun evento da mostrare con i filtri correnti.
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- Timeline verticale                                            -->
+        <!-- ============================================================ -->
+        <div t-elif="!state.loading" class="qs2_timeline">
+            <t t-foreach="filteredEvents" t-as="event" t-key="event.id">
+                <div t-attf-class="qs2_timeline_item qs2_group_{{ event.group }} kind_{{ event.kind }}">
+                    <!-- Pallino + linea verticale -->
+                    <div class="qs2_timeline_rail">
+                        <div class="qs2_timeline_dot">
+                            <i t-attf-class="fa {{ event.icon }}"/>
+                        </div>
+                    </div>
+
+                    <!-- Card evento -->
+                    <div class="qs2_timeline_card"
+                         t-att-class="event.link ? 'clickable' : ''"
+                         t-on-click="() => event.link ? this.openRecord(event.link) : (event.body_html ? this.toggleExpand(event.id) : null)">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <div class="qs2_timeline_title">
+                                    <t t-out="event.title"/>
+                                </div>
+                                <div t-if="event.subtitle" class="qs2_timeline_subtitle text-muted small">
+                                    <t t-out="event.subtitle"/>
+                                </div>
+                            </div>
+                            <div class="qs2_timeline_ts text-muted small text-end ms-3">
+                                <t t-out="formatDate(event.ts)"/>
+                            </div>
+                        </div>
+                        <div t-if="event.body_html and isExpanded(event.id)"
+                             class="qs2_timeline_body mt-2 small"
+                             t-out="event.body_html"/>
+                        <div t-if="event.body_html and !isExpanded(event.id) and !event.link"
+                             class="qs2_timeline_expand small text-muted mt-1">
+                            <i class="fa fa-chevron-down me-1"/>clicca per dettagli
+                        </div>
+                    </div>
+                </div>
+            </t>
+        </div>
+    </div>
+</t>
+
+</templates>

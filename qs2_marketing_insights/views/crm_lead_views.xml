@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Aggiunge un tab "Storia" al form del lead con il widget timeline OWL.
+         Posizionato come prima pagina del notebook (visibile per primo). -->
+    <record id="crm_lead_view_form_inherit_insights" model="ir.ui.view">
+        <field name="name">crm.lead.form.qs2.insights</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_lead_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Storia" name="qs2_timeline">
+                    <widget name="qs2_lead_timeline"/>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>
