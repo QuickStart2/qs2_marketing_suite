@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_qs2_lead_routing_rule_user,qs2.lead.routing.rule user,model_qs2_lead_routing_rule,sales_team.group_sale_salesman,1,0,0,0
+access_qs2_lead_routing_rule_manager,qs2.lead.routing.rule manager,model_qs2_lead_routing_rule,sales_team.group_sale_manager,1,1,1,1

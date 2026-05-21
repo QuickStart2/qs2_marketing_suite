@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="lead_routing_rule_list" model="ir.ui.view">
+        <field name="name">qs2.lead.routing.rule.list</field>
+        <field name="model">qs2.lead.routing.rule</field>
+        <field name="arch" type="xml">
+            <list string="Regole di routing lead">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="user_id"/>
+                <field name="team_id" optional="show"/>
+                <field name="country_ids" widget="many2many_tags" optional="show"/>
+                <field name="state_ids" widget="many2many_tags" optional="hide"/>
+                <field name="zip_pattern" optional="hide"/>
+                <field name="lang" optional="hide"/>
+                <field name="source_ids" widget="many2many_tags" optional="hide"/>
+                <field name="brand_ids" widget="many2many_tags" optional="hide"/>
+                <field name="initiative_pattern" optional="hide"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="lead_routing_rule_form" model="ir.ui.view">
+        <field name="name">qs2.lead.routing.rule.form</field>
+        <field name="model">qs2.lead.routing.rule</field>
+        <field name="arch" type="xml">
+            <form string="Regola di routing">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="sequence"/>
+                            <field name="active"/>
+                        </group>
+                        <group string="Assegna a">
+                            <field name="user_id"/>
+                            <field name="team_id"/>
+                        </group>
+                    </group>
+                    <group string="Condizioni (tutte in AND — vuoto = non filtra)">
+                        <group>
+                            <field name="country_ids" widget="many2many_tags"/>
+                            <field name="state_ids" widget="many2many_tags"/>
+                            <field name="zip_pattern" placeholder="es. 20*"/>
+                            <field name="lang"/>
+                        </group>
+                        <group>
+                            <field name="source_ids" widget="many2many_tags"/>
+                            <field name="brand_ids" widget="many2many_tags"/>
+                            <field name="initiative_pattern" placeholder="es. Webinar*"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_lead_routing_rule" model="ir.actions.act_window">
+        <field name="name">Regole di routing lead</field>
+        <field name="res_model">qs2.lead.routing.rule</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem id="menu_lead_routing_rule"
+              name="Routing lead webhook"
+              parent="crm.crm_menu_config"
+              action="action_lead_routing_rule"
+              sequence="100"/>
+
+</odoo>
