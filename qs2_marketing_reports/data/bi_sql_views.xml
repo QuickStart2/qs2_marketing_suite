@@ -1,0 +1,334 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <!-- ============================================================ -->
+    <!-- 1. Monitoraggio qualita lead                                  -->
+    <!-- ============================================================ -->
+    <record id="sql_view_lead_quality" model="bi.sql.view">
+        <field name="name">Monitoraggio Qualita Lead</field>
+        <field name="technical_name">lead_quality</field>
+        <field name="is_materialized">True</field>
+        <field name="view_order">pivot,graph,list</field>
+        <field name="query"><![CDATA[
+SELECT
+    cl.create_date AS x_data_creazione,
+    DATE_TRUNC('month', cl.create_date) AS x_mese,
+    EXTRACT(YEAR FROM cl.create_date)::integer AS x_anno,
+    cl.name AS x_nome,
+    -- jsonb (translatable) → estraggo con fallback it_IT → en_US
+    COALESCE(cs.name->>'it_IT', cs.name->>'en_US') AS x_fase,
+    cs.is_won AS x_vinto,
+    cl.active AS x_attivo,
+    CASE
+        WHEN cl.active = false AND cs.is_won = false THEN 'Perso'
+        WHEN cs.is_won = true THEN 'Vinto'
+        WHEN cl.active = true THEN 'In corso'
+        ELSE 'Altro'
+    END AS x_stato_lead,
+    COALESCE(clr.name->>'it_IT', clr.name->>'en_US') AS x_motivo_perdita,
+    CASE
+        WHEN clr.id IS NOT NULL THEN COALESCE(clr.name->>'it_IT', clr.name->>'en_US')
+        WHEN cl.active = false THEN 'Non specificato'
+        ELSE NULL
+    END AS x_motivo_perdita_dettaglio,
+    CASE
+        WHEN cs.is_won = true THEN 'Lavorabile'
+        WHEN cl.active = false AND COALESCE(clr.name->>'it_IT', clr.name->>'en_US') ILIKE '%non lavorabile%' THEN 'Non lavorabile'
+        WHEN cl.active = false AND COALESCE(clr.name->>'it_IT', clr.name->>'en_US') ILIKE '%inutile%' THEN 'Non lavorabile'
+        WHEN cl.active = false AND COALESCE(clr.name->>'it_IT', clr.name->>'en_US') ILIKE '%duplicat%' THEN 'Non lavorabile'
+        WHEN cl.active = false AND COALESCE(clr.name->>'it_IT', clr.name->>'en_US') ILIKE '%spam%' THEN 'Non lavorabile'
+        WHEN cl.active = true THEN 'In lavorazione'
+        ELSE 'Da verificare'
+    END AS x_lavorabilita,
+    us.name AS x_origine,
+    uc.name AS x_campagna,
+    COALESCE(st.name->>'it_IT', st.name->>'en_US') AS x_team,
+    rp.name AS x_venditore,
+    cl.expected_revenue AS x_ricavo_atteso,
+    1 AS x_conteggio
+FROM crm_lead cl
+LEFT JOIN crm_stage cs ON cs.id = cl.stage_id
+LEFT JOIN crm_lost_reason clr ON clr.id = cl.lost_reason_id
+LEFT JOIN utm_source us ON us.id = cl.source_id
+LEFT JOIN utm_campaign uc ON uc.id = cl.campaign_id
+LEFT JOIN crm_team st ON st.id = cl.team_id
+LEFT JOIN res_users ru ON ru.id = cl.user_id
+LEFT JOIN res_partner rp ON rp.id = ru.partner_id
+WHERE cl.type = 'opportunity'
+        ]]></field>
+    </record>
+
+    <!-- ============================================================ -->
+    <!-- 2. Report Lead Budget Fatturato — full funnel                 -->
+    <!--                                                                -->
+    <!-- Una riga per ogni lead (branch 1) + una riga per ogni piano    -->
+    <!-- media SENZA lead (branch 2 della UNION) — così il budget       -->
+    <!-- speso senza ritorno non si perde nel rollup.                   -->
+    <!--                                                                -->
+    <!-- Dimensioni: brand, agenzia, iniziativa, inserzione, campagna,  -->
+    <!-- origine, mezzo, fase, venditore, team, provincia.              -->
+    <!-- Misure: lead count (totali/aperti/vinti/persi/lavorabili),     -->
+    <!-- ricavo atteso, ordinato e fatturato reale da sale_order.       -->
+    <!-- ============================================================ -->
+    <record id="sql_view_marketing_report" model="bi.sql.view">
+        <field name="name">Report Lead Budget Fatturato</field>
+        <field name="technical_name">marketing_report</field>
+        <field name="is_materialized">True</field>
+        <field name="view_order">pivot,graph,list</field>
+        <field name="query"><![CDATA[
+WITH OrdFatt AS (
+    -- Ordinato e fatturato reale per opportunità, da sale_order confermati
+    SELECT
+        sal.opportunity_id,
+        sal.user_id,
+        sal.state,
+        sal.invoice_status,
+        SUM(COALESCE(sal.amount_untaxed, 0)) AS ordinato
+    FROM sale_order sal
+    WHERE COALESCE(sal.amount_untaxed, 0) > 10
+      AND COALESCE(sal.opportunity_id, 0) > 0
+      AND sal.state = 'sale'
+    GROUP BY sal.opportunity_id, sal.user_id, sal.state, sal.invoice_status
+)
+
+-- ============================================================
+-- Branch 1 — un record per ogni lead/opportunità
+-- ============================================================
+SELECT
+    1 AS x_lead_totali,
+
+    -- Dimensioni marketing (QS2)
+    br.name AS x_brand,
+    ag.name AS x_agenzia,
+    cl.qs2_initiative AS x_iniziativa,
+    ad.name AS x_inserzione,
+    ad.platform AS x_piattaforma,
+    ad.media_type AS x_tipo_media,
+    ad.platform_ref AS x_ad_platform_ref,
+
+    -- Dimensioni UTM
+    uc.name AS x_campagna,
+    us.name AS x_origine,
+    um.name AS x_mezzo,
+
+    -- Date
+    cl.create_date AS x_data_acquisizione,
+    DATE_TRUNC('month', cl.create_date) AS x_mese,
+    EXTRACT(YEAR FROM cl.create_date)::integer AS x_anno,
+    cl.date_closed AS x_data_chiusura,
+
+    -- Geolocalizzazione
+    provs.name AS x_provincia,
+    cl.city AS x_citta,
+
+    -- Anagrafica lead (sanitizzata)
+    regexp_replace(COALESCE(cl.name, ''), '[^a-zA-Z0-9 ]', '', 'g') AS x_nome_lead,
+    cl.email_from AS x_email,
+    cl.phone AS x_telefono,
+
+    -- Venditore / Team (crm_team.name è jsonb translatable)
+    rp.name AS x_venditore,
+    COALESCE(st.name->>'it_IT', st.name->>'en_US') AS x_team,
+
+    -- Fase / Stato (crm_stage.name è jsonb translatable)
+    COALESCE(cs.name->>'it_IT', cs.name->>'en_US') AS x_fase,
+    cs.is_won AS x_is_won,
+    cs.sequence AS x_fase_sequenza,
+    cl.won_status AS x_won_status,
+    CASE
+        WHEN cl.won_status = 'won' THEN 'Vinto'
+        WHEN cl.won_status = 'lost' THEN 'Perso'
+        ELSE 'In corso'
+    END AS x_stato_descrittivo,
+
+    -- Motivo perdita (crm_lost_reason.name è jsonb translatable)
+    COALESCE(clr.name->>'it_IT', clr.name->>'en_US') AS x_motivo_perdita,
+
+    -- Funnel (contatori)
+    CASE WHEN cl.won_status = 'won' THEN 1 ELSE 0 END AS x_lead_vinti,
+    CASE WHEN cl.won_status = 'lost' THEN 1 ELSE 0 END AS x_lead_persi,
+    CASE WHEN cl.won_status NOT IN ('won', 'lost') AND cl.active = TRUE THEN 1 ELSE 0 END AS x_lead_aperti,
+
+    -- Lavorabilità: pattern ILIKE sul nome del motivo di perdita
+    -- (indipendente da ID specifici del DB, ridurre falsi positivi/negativi
+    --  aggiungendo/togliendo pattern in base ai motivi configurati).
+    CASE
+        WHEN COALESCE(clr.name->>'it_IT', clr.name->>'en_US') ILIKE '%non lavorabile%'
+          OR COALESCE(clr.name->>'it_IT', clr.name->>'en_US') ILIKE '%inutile%'
+          OR COALESCE(clr.name->>'it_IT', clr.name->>'en_US') ILIKE '%spam%'
+          OR COALESCE(clr.name->>'it_IT', clr.name->>'en_US') ILIKE '%duplicat%'
+          OR COALESCE(clr.name->>'it_IT', clr.name->>'en_US') ILIKE '%numero errat%'
+          OR COALESCE(clr.name->>'it_IT', clr.name->>'en_US') ILIKE '%test%'
+        THEN 1
+        ELSE 0
+    END AS x_non_lavorabile,
+    CASE
+        WHEN cl.won_status = 'won' THEN 1
+        WHEN COALESCE(clr.name->>'it_IT', clr.name->>'en_US') ILIKE '%non lavorabile%'
+          OR COALESCE(clr.name->>'it_IT', clr.name->>'en_US') ILIKE '%inutile%'
+          OR COALESCE(clr.name->>'it_IT', clr.name->>'en_US') ILIKE '%spam%'
+          OR COALESCE(clr.name->>'it_IT', clr.name->>'en_US') ILIKE '%duplicat%'
+          OR COALESCE(clr.name->>'it_IT', clr.name->>'en_US') ILIKE '%numero errat%' THEN 0
+        ELSE 1
+    END AS x_lavorabile,
+
+    -- Budget (dal piano media)
+    mp.cost AS x_budget,
+    mp.impressions AS x_impressions,
+    mp.clicks AS x_clicks,
+    mp.month AS x_mese_pianificato,
+    mp.year AS x_anno_pianificato,
+    mp.cpl AS x_cpl_pianificato,
+    mp.roas AS x_roas_pianificato,
+
+    -- Revenue
+    cl.expected_revenue AS x_ricavo_atteso,
+    CASE WHEN cl.won_status = 'won' THEN cl.expected_revenue ELSE 0 END AS x_ricavo_vinto,
+
+    -- Vendite reali (da sale_order)
+    COALESCE(of.ordinato, 0) AS x_ordinato,
+    CASE WHEN of.invoice_status = 'invoiced' THEN COALESCE(of.ordinato, 0) ELSE 0 END AS x_fatturato
+
+FROM crm_lead cl
+LEFT JOIN crm_stage cs ON cs.id = cl.stage_id
+LEFT JOIN crm_lost_reason clr ON clr.id = cl.lost_reason_id
+LEFT JOIN utm_source us ON us.id = cl.source_id
+LEFT JOIN utm_medium um ON um.id = cl.medium_id
+LEFT JOIN utm_campaign uc ON uc.id = cl.campaign_id
+LEFT JOIN qs2_brand br ON br.id = cl.qs2_brand_id
+LEFT JOIN qs2_agency ag ON ag.id = cl.qs2_agency_id
+LEFT JOIN qs2_ad ad ON ad.id = cl.qs2_ad_id
+LEFT JOIN qs2_media_plan mp ON mp.id = cl.qs2_media_plan_id
+LEFT JOIN crm_team st ON st.id = cl.team_id
+LEFT JOIN res_users ru ON ru.id = cl.user_id
+LEFT JOIN res_partner rp ON rp.id = ru.partner_id
+LEFT JOIN res_country_state provs ON provs.id = cl.state_id
+LEFT JOIN OrdFatt of ON of.opportunity_id = cl.id
+WHERE cl.type IN ('lead', 'opportunity')
+
+UNION ALL
+
+-- ============================================================
+-- Branch 2 — piani media senza lead (budget speso senza ritorno)
+-- ============================================================
+SELECT
+    0 AS x_lead_totali,
+
+    br.name AS x_brand,
+    NULL AS x_agenzia,
+    NULL AS x_iniziativa,
+    NULL AS x_inserzione,
+    NULL AS x_piattaforma,
+    NULL AS x_tipo_media,
+    NULL AS x_ad_platform_ref,
+
+    uc.name AS x_campagna,
+    us.name AS x_origine,
+    um.name AS x_mezzo,
+
+    -- Data fittizia: 2° giorno del mese del piano media (varchar -> integer cast)
+    TO_DATE(mp.year || '-' || mp.month || '-02', 'YYYY-MM-DD')::timestamp AS x_data_acquisizione,
+    DATE_TRUNC('month', TO_DATE(mp.year || '-' || mp.month || '-02', 'YYYY-MM-DD'))::timestamp AS x_mese,
+    mp.year::integer AS x_anno,
+    NULL::timestamp AS x_data_chiusura,
+
+    NULL AS x_provincia,
+    NULL AS x_citta,
+
+    '(Senza lead)' AS x_nome_lead,
+    NULL AS x_email,
+    NULL AS x_telefono,
+
+    NULL AS x_venditore,
+    NULL AS x_team,
+
+    '(N/D)' AS x_fase,
+    FALSE AS x_is_won,
+    NULL::integer AS x_fase_sequenza,
+    NULL AS x_won_status,
+    'Budget non utilizzato' AS x_stato_descrittivo,
+    NULL AS x_motivo_perdita,
+
+    0 AS x_lead_vinti,
+    0 AS x_lead_persi,
+    0 AS x_lead_aperti,
+    0 AS x_non_lavorabile,
+    0 AS x_lavorabile,
+
+    mp.cost AS x_budget,
+    mp.impressions AS x_impressions,
+    mp.clicks AS x_clicks,
+    mp.month AS x_mese_pianificato,
+    mp.year AS x_anno_pianificato,
+    mp.cpl AS x_cpl_pianificato,
+    mp.roas AS x_roas_pianificato,
+
+    0::numeric AS x_ricavo_atteso,
+    0::numeric AS x_ricavo_vinto,
+    0::numeric AS x_ordinato,
+    0::numeric AS x_fatturato
+
+FROM qs2_media_plan mp
+LEFT JOIN qs2_brand br ON br.id = mp.brand_id
+LEFT JOIN utm_source us ON us.id = mp.source_id
+LEFT JOIN utm_medium um ON um.id = mp.medium_id
+LEFT JOIN utm_campaign uc ON uc.id = mp.campaign_id
+WHERE NOT EXISTS (
+    SELECT 1 FROM crm_lead cl WHERE cl.qs2_media_plan_id = mp.id
+)
+        ]]></field>
+    </record>
+
+    <!-- ============================================================ -->
+    <!-- 3. Reportistica mondo sales                                   -->
+    <!-- ============================================================ -->
+    <record id="sql_view_sales_report" model="bi.sql.view">
+        <field name="name">Report Vendite e Fatturato</field>
+        <field name="technical_name">sales_report</field>
+        <field name="is_materialized">True</field>
+        <field name="view_order">pivot,graph,list</field>
+        <field name="query"><![CDATA[
+SELECT
+    cl.create_date AS x_data_creazione,
+    cl.date_closed AS x_data_chiusura,
+    DATE_TRUNC('month', cl.create_date) AS x_mese_creazione,
+    DATE_TRUNC('month', cl.date_closed) AS x_mese_chiusura,
+    EXTRACT(YEAR FROM cl.create_date)::integer AS x_anno_creazione,
+    EXTRACT(YEAR FROM cl.date_closed)::integer AS x_anno_chiusura,
+    cl.name AS x_nome,
+    -- jsonb translatable → fallback it_IT → en_US
+    COALESCE(cs.name->>'it_IT', cs.name->>'en_US') AS x_fase,
+    cs.is_won AS x_vinto,
+    cl.active AS x_attivo,
+    rp.name AS x_venditore,
+    COALESCE(st.name->>'it_IT', st.name->>'en_US') AS x_team,
+    us.name AS x_origine,
+    uc.name AS x_campagna,
+    br.name AS x_brand,
+    cl.expected_revenue AS x_ricavo_atteso,
+    CASE WHEN cs.is_won = true THEN cl.expected_revenue ELSE 0 END AS x_fatturato,
+    CASE
+        WHEN cs.is_won = true THEN 'Vinto'
+        WHEN cl.active = false THEN 'Perso'
+        ELSE 'In corso'
+    END AS x_esito,
+    CASE WHEN cl.date_closed IS NOT NULL AND cl.create_date IS NOT NULL
+        THEN EXTRACT(DAY FROM cl.date_closed - cl.create_date)::integer
+        ELSE NULL
+    END AS x_giorni_chiusura,
+    1 AS x_conteggio,
+    CASE WHEN cs.is_won = true THEN 1 ELSE 0 END AS x_vendite_chiuse,
+    CASE WHEN cl.active = false AND cs.is_won = false THEN 1 ELSE 0 END AS x_vendite_perse
+FROM crm_lead cl
+LEFT JOIN crm_stage cs ON cs.id = cl.stage_id
+LEFT JOIN crm_team st ON st.id = cl.team_id
+LEFT JOIN res_users ru ON ru.id = cl.user_id
+LEFT JOIN res_partner rp ON rp.id = ru.partner_id
+LEFT JOIN utm_source us ON us.id = cl.source_id
+LEFT JOIN utm_campaign uc ON uc.id = cl.campaign_id
+LEFT JOIN qs2_brand br ON br.id = cl.qs2_brand_id
+WHERE cl.type = 'opportunity'
+        ]]></field>
+    </record>
+
+</odoo>

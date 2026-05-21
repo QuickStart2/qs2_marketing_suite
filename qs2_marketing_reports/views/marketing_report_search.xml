@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        Search view custom per il report marketing.
+        - field searchabili: nome lead, brand, agenzia, campagna, inserzione,
+          venditore, contatti, geo
+        - filtri data su data acquisizione + chiusura
+        - filtri di stato (vinti/persi/aperti/lavorabili)
+        - filtri per piattaforma pubblicitaria
+        - group_by su tutte le dimensioni significative
+
+        NB: bi_sql_editor sovrascrive search_view_id quando si rigenera la UI.
+        Per ri-applicare dopo "Crea Interfaccia" usa il record qui sotto
+        (oppure il post-init hook nel manifest).
+    -->
+    <record id="qs2_marketing_report_search" model="ir.ui.view">
+        <field name="name">qs2.marketing.report.search</field>
+        <field name="model">x_bi_sql_view.marketing_report</field>
+        <field name="priority">10</field>
+        <field name="arch" type="xml">
+            <search string="Marketing Report">
+                <!-- Campi ricerca testuale -->
+                <field name="x_nome_lead" string="Lead"/>
+                <field name="x_brand"/>
+                <field name="x_agenzia"/>
+                <field name="x_iniziativa"/>
+                <field name="x_campagna"/>
+                <field name="x_inserzione"/>
+                <field name="x_origine"/>
+                <field name="x_mezzo"/>
+                <field name="x_venditore"/>
+                <field name="x_team"/>
+                <field name="x_provincia"/>
+                <field name="x_citta"/>
+                <field name="x_email"/>
+                <field name="x_telefono"/>
+
+                <separator/>
+
+                <!-- Periodi acquisizione lead -->
+                <filter name="filter_data_acq" string="Acquisiti" date="x_data_acquisizione"/>
+                <filter name="filter_data_chiusura" string="Chiusi" date="x_data_chiusura"/>
+
+                <separator/>
+
+                <!-- Stato lead -->
+                <filter name="filter_aperti" string="Aperti"
+                        domain="[('x_won_status','=','pending')]"/>
+                <filter name="filter_vinti" string="Vinti"
+                        domain="[('x_is_won','=',True)]"/>
+                <filter name="filter_persi" string="Persi"
+                        domain="[('x_won_status','=','lost')]"/>
+                <filter name="filter_lavorabili" string="Lavorabili"
+                        domain="[('x_lavorabile','=',1)]"/>
+                <filter name="filter_non_lavorabili" string="Non lavorabili"
+                        domain="[('x_non_lavorabile','=',1)]"/>
+
+                <separator/>
+
+                <!-- Piattaforme advertising -->
+                <filter name="filter_meta" string="Meta"
+                        domain="[('x_piattaforma','=','meta')]"/>
+                <filter name="filter_google" string="Google"
+                        domain="[('x_piattaforma','=','google')]"/>
+                <filter name="filter_tiktok" string="TikTok"
+                        domain="[('x_piattaforma','=','tiktok')]"/>
+                <filter name="filter_linkedin" string="LinkedIn"
+                        domain="[('x_piattaforma','=','linkedin')]"/>
+
+                <separator/>
+
+                <!-- Tipo media -->
+                <filter name="filter_media_image" string="Foto"
+                        domain="[('x_tipo_media','=','image')]"/>
+                <filter name="filter_media_video" string="Video"
+                        domain="[('x_tipo_media','=','video')]"/>
+                <filter name="filter_media_text" string="Testo"
+                        domain="[('x_tipo_media','=','text')]"/>
+
+                <!-- Group By: in Odoo 19 <group> non accetta più expand/string -->
+                <group>
+                    <filter name="group_brand" string="Brand"
+                            context="{'group_by':'x_brand'}"/>
+                    <filter name="group_agenzia" string="Agenzia"
+                            context="{'group_by':'x_agenzia'}"/>
+                    <filter name="group_iniziativa" string="Iniziativa"
+                            context="{'group_by':'x_iniziativa'}"/>
+                    <filter name="group_campagna" string="Campagna"
+                            context="{'group_by':'x_campagna'}"/>
+                    <filter name="group_inserzione" string="Inserzione"
+                            context="{'group_by':'x_inserzione'}"/>
+                    <filter name="group_piattaforma" string="Piattaforma"
+                            context="{'group_by':'x_piattaforma'}"/>
+                    <filter name="group_tipo_media" string="Tipo Media"
+                            context="{'group_by':'x_tipo_media'}"/>
+                    <filter name="group_origine" string="Origine (UTM source)"
+                            context="{'group_by':'x_origine'}"/>
+                    <filter name="group_mezzo" string="Mezzo (UTM medium)"
+                            context="{'group_by':'x_mezzo'}"/>
+                    <filter name="group_venditore" string="Venditore"
+                            context="{'group_by':'x_venditore'}"/>
+                    <filter name="group_team" string="Team"
+                            context="{'group_by':'x_team'}"/>
+                    <filter name="group_fase" string="Fase"
+                            context="{'group_by':'x_fase'}"/>
+                    <filter name="group_provincia" string="Provincia"
+                            context="{'group_by':'x_provincia'}"/>
+                    <filter name="group_won_status" string="Stato"
+                            context="{'group_by':'x_won_status'}"/>
+                    <filter name="group_motivo_perdita" string="Motivo perdita"
+                            context="{'group_by':'x_motivo_perdita'}"/>
+                    <filter name="group_mese_acq" string="Mese acquisizione"
+                            context="{'group_by':'x_data_acquisizione:month'}"/>
+                    <filter name="group_anno" string="Anno"
+                            context="{'group_by':'x_anno'}"/>
+                    <filter name="group_mese_piano" string="Mese piano media"
+                            context="{'group_by':'x_mese_pianificato'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+</odoo>
