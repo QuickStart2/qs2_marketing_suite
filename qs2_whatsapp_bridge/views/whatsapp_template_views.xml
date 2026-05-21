@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="whatsapp_template_list" model="ir.ui.view">
+        <field name="name">qs2.whatsapp.template.list</field>
+        <field name="model">qs2.whatsapp.template</field>
+        <field name="arch" type="xml">
+            <list string="Template WhatsApp" editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="body"/>
+                <field name="description" optional="hide"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="whatsapp_template_form" model="ir.ui.view">
+        <field name="name">qs2.whatsapp.template.form</field>
+        <field name="model">qs2.whatsapp.template</field>
+        <field name="arch" type="xml">
+            <form string="Template WhatsApp">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="sequence"/>
+                            <field name="active"/>
+                        </group>
+                        <group>
+                            <field name="description"/>
+                        </group>
+                    </group>
+                    <group string="Testo (segnaposto: {first_name}, {partner_name}, {user_name})">
+                        <field name="body" nolabel="1" widget="text" placeholder="Buongiorno {first_name}, ..."/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_whatsapp_template" model="ir.actions.act_window">
+        <field name="name">Template WhatsApp</field>
+        <field name="res_model">qs2.whatsapp.template</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem id="menu_whatsapp_template"
+              name="Template messaggi"
+              parent="menu_whatsapp_config"
+              action="action_whatsapp_template"
+              sequence="50"/>
+
+</odoo>

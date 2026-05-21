@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+
+<t t-name="qs2_whatsapp_bridge.WhatsAppChat">
+    <div class="wa-chat-container d-flex h-100">
+
+        <!-- ============================================================ -->
+        <!-- SIDEBAR — lista conversazioni                                -->
+        <!-- ============================================================ -->
+        <div class="wa-sidebar d-flex flex-column">
+            <!-- Header sidebar -->
+            <div class="wa-sidebar-header d-flex align-items-center justify-content-between px-3 py-2">
+                <h5 class="mb-0 text-white">WhatsApp</h5>
+                <div class="d-flex gap-2">
+                    <span t-attf-class="wa-status-dot {{ state.bridgeStatus === 'connected' ? 'bg-success' : 'bg-danger' }}"
+                          t-att-title="state.bridgeStatus"/>
+                    <button t-attf-class="btn btn-sm {{ state.showArchived ? 'btn-light' : 'btn-outline-light' }}"
+                            t-on-click="toggleShowArchived"
+                            t-attf-title="{{ state.showArchived ? 'Nascondi archiviate' : 'Mostra archiviate' }}">
+                        <i class="fa fa-archive"/>
+                    </button>
+                    <button class="btn btn-sm btn-outline-light" t-on-click="toggleNewChat"
+                            title="Nuova chat">
+                        <i class="fa fa-plus"/>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Search -->
+            <div class="wa-search px-3 py-2">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-transparent border-0">
+                        <i class="fa fa-search text-muted"/>
+                    </span>
+                    <input type="text" class="form-control border-0"
+                           placeholder="Cerca..."
+                           t-att-value="state.searchQuery"
+                           t-on-input="onSearchInput"/>
+                </div>
+            </div>
+
+            <!-- New chat panel -->
+            <div t-if="state.showNewChat" class="wa-new-chat px-3 py-2 border-bottom">
+                <div class="input-group input-group-sm">
+                    <input type="text" class="form-control"
+                           placeholder="+39328..."
+                           t-att-value="state.newChatPhone"
+                           t-on-input="onNewChatPhoneInput"
+                           t-on-keydown="(ev) => ev.key === 'Enter' and this.createNewConversation()"/>
+                    <button class="btn btn-success btn-sm" t-on-click="createNewConversation">
+                        <i class="fa fa-arrow-right"/>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Conversation list -->
+            <div class="wa-conversation-list flex-grow-1 overflow-auto">
+                <t t-foreach="getFilteredConversations()" t-as="conv" t-key="conv.id">
+                    <div t-attf-class="wa-conversation-item d-flex align-items-center px-3 py-2 {{ state.activeConversationId === conv.id ? 'active' : '' }} {{ conv.active === false ? 'wa-conv-archived' : '' }}"
+                         t-on-click="() => this.selectConversation(conv)">
+                        <!-- Avatar -->
+                        <div class="wa-avatar me-3">
+                            <img t-if="conv.avatar_url"
+                                 t-att-src="conv.avatar_url"
+                                 class="rounded-circle"
+                                 width="48" height="48"
+                                 alt="avatar"/>
+                            <div t-else="" class="wa-avatar-placeholder rounded-circle d-flex align-items-center justify-content-center">
+                                <span t-out="getInitials(conv.display_name)"/>
+                            </div>
+                        </div>
+                        <!-- Info -->
+                        <div class="flex-grow-1 min-width-0">
+                            <div class="d-flex justify-content-between">
+                                <span class="wa-conv-name text-truncate fw-bold"
+                                      t-out="conv.display_name"/>
+                                <small class="wa-conv-time text-muted"
+                                       t-out="formatTime(conv.last_message_date)"/>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <small class="text-muted text-truncate"
+                                       t-out="conv.last_message_preview"/>
+                                <span t-if="conv.unread_count > 0"
+                                      class="badge bg-success rounded-pill ms-2"
+                                      t-out="conv.unread_count"/>
+                            </div>
+                        </div>
+                        <!-- Bottone archivia/ripristina -->
+                        <button class="wa-archive-btn btn btn-sm btn-link p-1 ms-1"
+                                t-on-click="(ev) => this.toggleArchive(ev, conv)"
+                                t-attf-title="{{ conv.active === false ? 'Ripristina' : 'Archivia' }}">
+                            <i t-attf-class="fa {{ conv.active === false ? 'fa-undo' : 'fa-archive' }} text-muted"/>
+                        </button>
+                    </div>
+                </t>
+                <div t-if="getFilteredConversations().length === 0"
+                     class="text-center text-muted p-4">
+                    <i class="fa fa-comments fa-3x mb-2 d-block"/>
+                    Nessuna conversazione
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- MAIN — area chat                                             -->
+        <!-- ============================================================ -->
+        <div class="wa-main d-flex flex-column flex-grow-1">
+            <t t-if="state.activeConversationId">
+                <!-- Chat header -->
+                <div class="wa-chat-header d-flex align-items-center px-3 py-2">
+                    <div class="wa-avatar me-3">
+                        <t t-set="activeConv" t-value="getActiveConversation()"/>
+                        <img t-if="activeConv and activeConv.avatar_url"
+                             t-att-src="activeConv.avatar_url"
+                             class="rounded-circle"
+                             width="40" height="40" alt="avatar"/>
+                        <div t-else="" class="wa-avatar-placeholder wa-avatar-sm rounded-circle d-flex align-items-center justify-content-center">
+                            <span t-out="activeConv ? getInitials(activeConv.display_name) : '?'"/>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="fw-bold" t-out="activeConv ? activeConv.display_name : ''"/>
+                        <small class="text-muted d-block" t-out="activeConv ? activeConv.phone : ''"/>
+                        <small t-if="activeConv and activeConv.service_id"
+                               class="text-muted d-block wa-service-id">
+                            ID servizio: <span t-out="activeConv.service_id"/>
+                        </small>
+                    </div>
+                </div>
+
+                <!-- Messages area -->
+                <div class="wa-messages flex-grow-1 overflow-auto px-4 py-3">
+                    <t t-foreach="state.messages" t-as="msg" t-key="msg.id">
+                        <div t-attf-class="wa-bubble-row d-flex {{ msg.direction === 'out' ? 'justify-content-end' : 'justify-content-start' }} mb-2">
+                            <div t-attf-class="wa-bubble {{ msg.direction === 'out' ? 'wa-bubble-out' : 'wa-bubble-in' }}">
+                                <div class="wa-bubble-text" t-out="msg.body"/>
+                                <div class="wa-bubble-meta d-flex align-items-center justify-content-end gap-1">
+                                    <small class="wa-bubble-time" t-out="formatTime(msg.timestamp)"/>
+                                    <i t-if="msg.direction === 'out'"
+                                       t-attf-class="fa {{ getStateIcon(msg.state) }} wa-bubble-check"/>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                    <div t-ref="messagesEnd"/>
+                </div>
+
+                <!-- Input area -->
+                <div class="wa-input-area d-flex align-items-end px-3 py-2 gap-2">
+                    <textarea t-ref="messageInput"
+                              class="form-control wa-input"
+                              rows="1"
+                              placeholder="Scrivi un messaggio..."
+                              t-att-value="state.inputText"
+                              t-on-input="onInputChange"
+                              t-on-keydown="onKeyDown"/>
+                    <button class="btn wa-send-btn rounded-circle d-flex align-items-center justify-content-center"
+                            t-on-click="sendMessage"
+                            t-att-disabled="!state.inputText.trim()">
+                        <i class="fa fa-paper-plane"/>
+                    </button>
+                </div>
+            </t>
+
+            <!-- Empty state -->
+            <t t-else="">
+                <div class="wa-empty d-flex flex-column align-items-center justify-content-center h-100">
+                    <i class="fa fa-whatsapp wa-empty-icon mb-3"/>
+                    <h4 class="text-muted">WhatsApp Bridge</h4>
+                    <p class="text-muted">
+                        Seleziona una conversazione o crea una nuova chat
+                    </p>
+                </div>
+            </t>
+        </div>
+
+    </div>
+</t>
+
+</templates>

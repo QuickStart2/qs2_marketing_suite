@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Form view — Configurazione account -->
+    <record id="whatsapp_account_form" model="ir.ui.view">
+        <field name="name">whatsapp.account.form</field>
+        <field name="model">whatsapp.account</field>
+        <field name="arch" type="xml">
+            <form string="Configurazione WhatsApp" create="false" delete="false">
+                <header>
+                    <button name="action_refresh_status"
+                            type="object"
+                            string="Aggiorna stato"
+                            class="btn-primary"
+                            icon="fa-refresh"/>
+                    <button name="action_disconnect"
+                            type="object"
+                            string="Disconnetti"
+                            class="btn-warning"
+                            invisible="state != 'connected'"
+                            confirm="Vuoi disconnettere WhatsApp? Dovrai riscansionare il QR code."/>
+                    <button name="action_send_test_message"
+                            type="object"
+                            string="Invia messaggio di test"
+                            class="btn-secondary"
+                            invisible="state != 'connected'"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="disconnected,qr,connected"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button class="oe_stat_button" icon="fa-comments"
+                                type="object"
+                                name="action_open_conversations">
+                            <span>Conversazioni</span>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="WhatsApp"/></h1>
+                    </div>
+
+                    <group>
+                        <group string="Connessione Bridge">
+                            <field name="bridge_url"
+                                   help="URL del microservizio WhatsApp Bridge (es. http://localhost:3100 o https://wa-bridge.mioserver.com)"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                    </group>
+
+                    <!-- STATO: Disconnesso -->
+                    <div class="alert alert-danger"
+                         invisible="state != 'disconnected'">
+                        <div class="text-center mb-3">
+                            <h3><i class="fa fa-times-circle"/> Non connesso</h3>
+                            <p>
+                                Il bridge WhatsApp non e' raggiungibile.
+                                Verifica che sia in esecuzione e clicca <b>"Aggiorna stato"</b>.
+                            </p>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <h5><i class="fa fa-server"/> Opzione 1 — Systemd (consigliato)</h5>
+                                <p class="text-muted small">
+                                    Installa il bridge come servizio di sistema.
+                                    Si avvia automaticamente al boot.
+                                </p>
+                                <pre class="bg-dark text-light p-2 rounded small">
+cd /percorso/addons/qs2_whatsapp_bridge/bridge
+sudo ./setup.sh
+
+# Vedi il QR code nei log
+journalctl -u qs2-whatsapp-bridge -f</pre>
+                            </div>
+                            <div class="col-md-4">
+                                <h5><i class="fa fa-cube"/> Opzione 2 — Docker</h5>
+                                <p class="text-muted small">
+                                    Ideale per deploy cloud o Odoo.sh.
+                                    Il bridge gira in un container isolato.
+                                </p>
+                                <pre class="bg-dark text-light p-2 rounded small">
+cd /percorso/addons/qs2_whatsapp_bridge/bridge
+docker compose up -d
+
+# Vedi il QR code nei log
+docker compose logs -f</pre>
+                            </div>
+                            <div class="col-md-4">
+                                <h5><i class="fa fa-terminal"/> Opzione 3 — Manuale</h5>
+                                <p class="text-muted small">
+                                    Per test rapidi o sviluppo.
+                                    Richiede Node.js 22+ installato.
+                                </p>
+                                <pre class="bg-dark text-light p-2 rounded small">
+cd /percorso/addons/qs2_whatsapp_bridge/bridge
+npm install
+node server.js</pre>
+                            </div>
+                        </div>
+
+                        <div class="text-center mt-2">
+                            <p class="text-muted small">
+                                <i class="fa fa-info-circle"/>
+                                Il bridge e' un microservizio Node.js che gestisce la connessione
+                                a WhatsApp Web. Una volta avviato, torna qui e clicca "Aggiorna stato".
+                                <br/>Se il bridge e' su un altro server, modifica il <b>Bridge URL</b> sopra.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- STATO: QR Code -->
+                    <div class="alert alert-warning text-center"
+                         invisible="state != 'qr'">
+                        <h3><i class="fa fa-qrcode"/> Scansiona il QR Code</h3>
+                        <div class="row justify-content-center mt-3">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <field name="qr_image" widget="image"
+                                               options="{'size': [300, 300]}"/>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 text-start">
+                                <h5>Come fare:</h5>
+                                <ol>
+                                    <li>Apri <b>WhatsApp</b> sul telefono</li>
+                                    <li>Vai in <b>Impostazioni</b></li>
+                                    <li>Tocca <b>Dispositivi collegati</b></li>
+                                    <li>Tocca <b>Collega un dispositivo</b></li>
+                                    <li>Inquadra il QR code qui a sinistra</li>
+                                </ol>
+                                <p class="text-muted small mt-3">
+                                    <i class="fa fa-clock-o"/>
+                                    Il QR code scade dopo ~20 secondi.
+                                    Clicca <b>"Aggiorna stato"</b> per ottenerne uno nuovo.
+                                </p>
+                                <p class="text-muted small">
+                                    <i class="fa fa-lightbulb-o"/>
+                                    Consiglio: usa un numero dedicato per il bridge,
+                                    non il tuo numero personale.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- STATO: Connesso -->
+                    <div class="alert alert-success"
+                         invisible="state != 'connected'">
+                        <div class="text-center">
+                            <h3><i class="fa fa-check-circle"/> WhatsApp connesso!</h3>
+                            <p>Il bridge e' attivo e pronto per inviare e ricevere messaggi.</p>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <h5>Cosa puoi fare:</h5>
+                                <ul>
+                                    <li>Vai su <b>WhatsApp > Chat</b> per inviare e ricevere messaggi</li>
+                                    <li>Apri un <b>Contatto</b> e clicca il bottone <b>WhatsApp</b></li>
+                                    <li>Clicca <b>"Invia messaggio di test"</b> qui sopra per provare</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h5>Da altri moduli Odoo:</h5>
+                                <pre class="bg-dark text-light p-2 rounded small">
+# Invia un messaggio da qualsiasi modulo
+self.env['whatsapp.conversation'].send_message(
+    phone='+39328...',
+    body='Il tuo ordine e pronto!'
+)</pre>
+                            </div>
+                        </div>
+                    </div>
+
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action — apre l'account (auto-crea se non esiste) -->
+    <record id="action_whatsapp_account" model="ir.actions.act_window">
+        <field name="name">Configurazione WhatsApp</field>
+        <field name="res_model">whatsapp.account</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+    </record>
+
+</odoo>

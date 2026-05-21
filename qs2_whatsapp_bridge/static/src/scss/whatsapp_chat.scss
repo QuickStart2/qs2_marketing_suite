@@ -1,0 +1,244 @@
+// ==========================================================================
+// WhatsApp Chat — stile WhatsApp Web
+// ==========================================================================
+
+// Colori WhatsApp
+$wa-green-dark: #075e54;
+$wa-green: #25d366;
+$wa-green-light: #dcf8c6;
+$wa-teal: #128c7e;
+$wa-bg: #efeae2;
+$wa-bg-pattern: #e5ddd5;
+$wa-sidebar-bg: #ffffff;
+$wa-sidebar-header-bg: $wa-green-dark;
+$wa-chat-header-bg: #ededed;
+$wa-input-bg: #f0f0f0;
+$wa-bubble-out: $wa-green-light;
+$wa-bubble-in: #ffffff;
+
+// Container principale
+.wa-chat-container {
+    height: calc(100vh - 46px); // header Odoo
+    background: $wa-bg;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+// ==========================================================================
+// Sidebar
+// ==========================================================================
+.wa-sidebar {
+    width: 350px;
+    min-width: 350px;
+    background: $wa-sidebar-bg;
+    border-right: 1px solid #d1d7db;
+}
+
+.wa-sidebar-header {
+    background: $wa-sidebar-header-bg;
+    min-height: 56px;
+}
+
+.wa-status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-top: 6px;
+}
+
+.wa-search {
+    background: #f6f6f6;
+
+    .form-control,
+    .input-group-text {
+        background: #ffffff;
+        border-radius: 8px;
+
+        &:focus {
+            box-shadow: none;
+        }
+    }
+}
+
+.wa-new-chat {
+    background: #f0f0f0;
+
+    .form-control {
+        border-radius: 8px 0 0 8px;
+    }
+}
+
+// Conversation list
+.wa-conversation-list {
+    .wa-conversation-item {
+        cursor: pointer;
+        border-bottom: 1px solid #f0f0f0;
+        transition: background 0.15s;
+
+        &:hover {
+            background: #f5f5f5;
+        }
+
+        &.active {
+            background: #ebebeb;
+        }
+    }
+}
+
+.wa-conv-name {
+    font-size: 15px;
+}
+
+.wa-conv-time {
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+// Avatar
+.wa-avatar-placeholder {
+    width: 48px;
+    height: 48px;
+    background: $wa-teal;
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.wa-avatar-sm {
+    width: 40px !important;
+    height: 40px !important;
+    font-size: 14px !important;
+}
+
+// ==========================================================================
+// Chat area
+// ==========================================================================
+.wa-chat-header {
+    background: $wa-chat-header-bg;
+    min-height: 56px;
+    border-bottom: 1px solid #d1d7db;
+}
+
+// Messages
+.wa-messages {
+    background: $wa-bg-pattern;
+    background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAIklEQVQIW2NkQAL/////z8jIyMDIyMjAyMgIYTMyYAkAAGwGBQFWm2QEAAAAASUVORK5CYII=");
+    background-repeat: repeat;
+}
+
+// Bubbles
+.wa-bubble {
+    max-width: 65%;
+    padding: 6px 10px 4px;
+    border-radius: 8px;
+    position: relative;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+    word-wrap: break-word;
+    white-space: pre-wrap;
+}
+
+.wa-bubble-out {
+    background: $wa-bubble-out;
+    border-top-right-radius: 0;
+}
+
+.wa-bubble-in {
+    background: $wa-bubble-in;
+    border-top-left-radius: 0;
+}
+
+.wa-bubble-text {
+    font-size: 14px;
+    line-height: 1.4;
+    color: #303030;
+}
+
+.wa-bubble-meta {
+    margin-top: 2px;
+}
+
+.wa-bubble-time {
+    font-size: 11px;
+    color: #8696a0;
+}
+
+.wa-bubble-check {
+    font-size: 12px;
+    color: #8696a0;
+
+    &.text-primary {
+        color: #53bdeb !important;
+    }
+}
+
+// ==========================================================================
+// Input area
+// ==========================================================================
+.wa-input-area {
+    background: $wa-input-bg;
+    border-top: 1px solid #d1d7db;
+    min-height: 56px;
+}
+
+.wa-input {
+    border: none;
+    border-radius: 8px;
+    background: #ffffff;
+    resize: none;
+    padding: 9px 12px;
+    font-size: 14px;
+    max-height: 120px;
+
+    &:focus {
+        box-shadow: none;
+        background: #ffffff;
+    }
+}
+
+.wa-send-btn {
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    background: $wa-green;
+    color: white;
+    border: none;
+    font-size: 16px;
+
+    &:hover:not(:disabled) {
+        background: $wa-teal;
+        color: white;
+    }
+
+    &:disabled {
+        background: #a0a0a0;
+        color: white;
+    }
+}
+
+// ==========================================================================
+// Empty state
+// ==========================================================================
+.wa-empty {
+    background: #f8f9fa;
+}
+
+.wa-empty-icon {
+    font-size: 80px;
+    color: $wa-green;
+    opacity: 0.6;
+}
+
+// ==========================================================================
+// Archivio conversazioni
+// ==========================================================================
+.wa-archive-btn {
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    &:hover { opacity: 1 !important; }
+}
+.wa-conversation-item:hover .wa-archive-btn { opacity: 0.6; }
+
+.wa-conv-archived {
+    opacity: 0.55;
+    .wa-conv-name { font-style: italic; }
+}

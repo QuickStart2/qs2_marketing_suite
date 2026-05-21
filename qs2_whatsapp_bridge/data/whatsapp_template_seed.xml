@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <record id="template_saluto" model="qs2.whatsapp.template">
+        <field name="name">Saluto iniziale</field>
+        <field name="sequence">10</field>
+        <field name="body">Buongiorno {first_name}, grazie per averci contattato! Sono {user_name}, ti scrivo da QuickStart². Quando le va una breve call per capire come possiamo aiutarti?</field>
+        <field name="description">Primo contatto su un lead appena arrivato.</field>
+    </record>
+
+    <record id="template_follow_up" model="qs2.whatsapp.template">
+        <field name="name">Follow-up dopo demo</field>
+        <field name="sequence">20</field>
+        <field name="body">Ciao {first_name}, grazie per il tempo dedicato alla demo. Hai dato un'occhiata alla proposta? Sono a disposizione per chiarimenti.</field>
+        <field name="description">Reminder dopo dimostrazione/preventivo inviato.</field>
+    </record>
+
+    <record id="template_appuntamento" model="qs2.whatsapp.template">
+        <field name="name">Conferma appuntamento</field>
+        <field name="sequence">30</field>
+        <field name="body">Ciao {first_name}, ti confermo l'appuntamento che abbiamo fissato. A presto!</field>
+        <field name="description">Conferma rapida dopo aver concordato un appuntamento.</field>
+    </record>
+
+    <record id="template_preventivo" model="qs2.whatsapp.template">
+        <field name="name">Invio preventivo</field>
+        <field name="sequence">40</field>
+        <field name="body">Ciao {first_name}, come anticipato ti invio il preventivo per {partner_name}. Resto in attesa di un tuo feedback. Grazie!</field>
+        <field name="description">Da abbinare all'allegato del preventivo via email/WA.</field>
+    </record>
+
+    <record id="template_ringraziamento_webinar" model="qs2.whatsapp.template">
+        <field name="name">Ringraziamento post-webinar</field>
+        <field name="sequence">50</field>
+        <field name="body">Ciao {first_name}, grazie per aver partecipato al webinar! Se hai domande sono qui — basta che mi rispondi a questo messaggio.</field>
+        <field name="description">Triggerabile via automation quando il contatto raggiunge la milestone "Visto Webinar 3".</field>
+    </record>
+
+</odoo>

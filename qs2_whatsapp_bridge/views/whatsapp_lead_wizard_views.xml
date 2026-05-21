@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Form del wizard "Invia WhatsApp da lead" -->
+    <record id="qs2_whatsapp_lead_wizard_form" model="ir.ui.view">
+        <field name="name">qs2.whatsapp.lead.wizard.form</field>
+        <field name="model">qs2.whatsapp.lead.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Invia WhatsApp">
+                <group>
+                    <field name="lead_id" invisible="1"/>
+                    <field name="phone"/>
+                    <field name="template_id"
+                           options="{'no_create': True, 'no_open': True}"
+                           placeholder="(opzionale) scegli un template..."/>
+                </group>
+                <group>
+                    <field name="body" nolabel="1" placeholder="Scrivi il messaggio..."/>
+                </group>
+                <footer>
+                    <button name="action_send" type="object"
+                            string="Invia" class="btn-primary"/>
+                    <button string="Annulla" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!--
+        Il bottone "Invia WhatsApp" nel form crm.lead è solo nel chatter
+        (vedi static/src/chatter_button/chatter_button.{js,xml}).
+        Non lo aggiungiamo nell'header per evitare doppioni.
+    -->
+
+</odoo>

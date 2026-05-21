@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <!-- Aggiunge un bottone "WhatsApp" nel chatter dopo "Log note".
+         Visibile solo quando il thread è un crm.lead. -->
+    <t t-inherit="mail.Chatter" t-inherit-mode="extension">
+        <xpath expr="//button[hasclass('o-mail-Chatter-logNote')]" position="after">
+            <button t-if="qs2IsWhatsAppEnabled()"
+                    class="o-mail-Chatter-qs2Whatsapp btn btn-success text-nowrap me-1"
+                    t-att-class="{ 'my-2': !props.compactHeight }"
+                    t-on-click="openQs2WhatsAppWizard"
+                    title="Invia messaggio WhatsApp">
+                <i class="fa fa-whatsapp me-1"/>WhatsApp
+            </button>
+        </xpath>
+    </t>
+
+</templates>

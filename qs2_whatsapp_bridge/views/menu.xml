@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Server action per aprire account (auto-crea + refresh stato) -->
+    <record id="action_open_whatsapp_account" model="ir.actions.server">
+        <field name="name">Connessione WhatsApp</field>
+        <field name="model_id" ref="model_whatsapp_account"/>
+        <field name="state">code</field>
+        <field name="code">action = model.action_open_account()</field>
+    </record>
+
+    <!-- Menu principale -->
+    <menuitem id="menu_whatsapp_root"
+              name="WhatsApp"
+              web_icon="qs2_whatsapp_bridge,static/description/icon.png"
+              sequence="90"/>
+
+    <!-- Chat (client action) -->
+    <menuitem id="menu_whatsapp_chat"
+              name="Chat"
+              parent="menu_whatsapp_root"
+              action="action_whatsapp_chat"
+              sequence="10"/>
+
+    <!-- Conversazioni (list/form) -->
+    <menuitem id="menu_whatsapp_conversations"
+              name="Conversazioni"
+              parent="menu_whatsapp_root"
+              action="action_whatsapp_conversation"
+              sequence="20"/>
+
+    <!-- Configurazione -->
+    <menuitem id="menu_whatsapp_config"
+              name="Configurazione"
+              parent="menu_whatsapp_root"
+              sequence="100"/>
+
+    <menuitem id="menu_whatsapp_account"
+              name="Connessione"
+              parent="menu_whatsapp_config"
+              action="action_open_whatsapp_account"
+              sequence="10"/>
+
+</odoo>

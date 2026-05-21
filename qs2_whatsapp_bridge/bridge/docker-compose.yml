@@ -1,0 +1,15 @@
+services:
+  whatsapp-bridge:
+    build: .
+    container_name: whatsapp-bridge
+    restart: unless-stopped
+    ports:
+      - "${WA_BRIDGE_PORT:-3100}:3100"
+    volumes:
+      - wa_auth:/app/auth_state
+    environment:
+      - WA_BRIDGE_PORT=3100
+      - LOG_LEVEL=warn
+
+volumes:
+  wa_auth:
