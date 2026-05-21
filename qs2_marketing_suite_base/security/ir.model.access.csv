@@ -1,0 +1,7 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_qs2_brand_user,qs2.brand.user,model_qs2_brand,base.group_user,1,1,1,0
+access_qs2_media_plan_user,qs2.media.plan.user,model_qs2_media_plan,base.group_user,1,1,1,1
+access_qs2_ad_user,qs2.ad.user,model_qs2_ad,base.group_user,1,1,1,1
+access_qs2_agency_user,qs2.agency.user,model_qs2_agency,base.group_user,1,1,1,0
+access_qs2_rating_criterion_user,qs2.lead.rating.criterion.user,model_qs2_lead_rating_criterion,base.group_user,1,0,0,0
+access_qs2_rating_criterion_manager,qs2.lead.rating.criterion.manager,model_qs2_lead_rating_criterion,sales_team.group_sale_manager,1,1,1,1

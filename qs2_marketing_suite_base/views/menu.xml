@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Menu principale -->
+    <menuitem id="menu_marketing_suite_root"
+              name="Marketing Suite"
+              web_icon="qs2_marketing_suite_base,static/description/icon.png"
+              sequence="85"/>
+
+    <!-- Piani Media -->
+    <menuitem id="menu_media_plan"
+              name="Piani Media"
+              parent="menu_marketing_suite_root"
+              action="action_qs2_media_plan"
+              sequence="10"/>
+
+    <!-- Inserzioni -->
+    <menuitem id="menu_ad"
+              name="Inserzioni"
+              parent="menu_marketing_suite_root"
+              action="action_qs2_ad"
+              sequence="20"/>
+
+    <!-- Configurazione -->
+    <menuitem id="menu_marketing_config"
+              name="Configurazione"
+              parent="menu_marketing_suite_root"
+              sequence="100"/>
+
+    <menuitem id="menu_brand"
+              name="Brand"
+              parent="menu_marketing_config"
+              action="action_qs2_brand"
+              sequence="10"/>
+
+    <menuitem id="menu_agency"
+              name="Agenzie"
+              parent="menu_marketing_config"
+              action="action_qs2_agency"
+              sequence="20"/>
+
+</odoo>

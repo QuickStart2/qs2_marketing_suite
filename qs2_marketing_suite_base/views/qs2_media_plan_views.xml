@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Media Plan — Form -->
+    <record id="qs2_media_plan_form" model="ir.ui.view">
+        <field name="name">qs2.media.plan.form</field>
+        <field name="model">qs2.media.plan</field>
+        <field name="arch" type="xml">
+            <form string="Piano Media">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button class="oe_stat_button" icon="fa-bullhorn"
+                                type="object" name="action_open_ads">
+                            <field name="ad_count" string="Inserzioni"
+                                   widget="statinfo"/>
+                        </button>
+                        <button class="oe_stat_button" icon="fa-users"
+                                type="object" name="action_open_leads">
+                            <field name="lead_count" string="Lead"
+                                   widget="statinfo"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="display_name"/></h1>
+                    </div>
+
+                    <group>
+                        <group string="Dimensioni">
+                            <field name="campaign_id"/>
+                            <field name="source_id"/>
+                            <field name="medium_id"/>
+                            <field name="brand_id"/>
+                        </group>
+                        <group string="Periodo">
+                            <field name="month"/>
+                            <field name="year"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="currency_id" groups="base.group_multi_currency"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Metriche">
+                            <group>
+                                <group string="Awareness">
+                                    <field name="impressions"/>
+                                    <field name="clicks"/>
+                                    <field name="ctr" widget="percentage"/>
+                                    <field name="cpm"/>
+                                </group>
+                                <group string="Costo e Lead">
+                                    <field name="cost"/>
+                                    <field name="lead_count"/>
+                                    <field name="cpc"/>
+                                    <field name="cpl"/>
+                                </group>
+                            </group>
+                            <group>
+                                <group string="Conversioni e Revenue">
+                                    <field name="conversions"/>
+                                    <field name="revenue"/>
+                                    <field name="conversion_rate" widget="percentage"/>
+                                    <field name="cpa"/>
+                                    <field name="roas"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Note">
+                            <field name="note" placeholder="Note e commenti..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Media Plan — List -->
+    <record id="qs2_media_plan_list" model="ir.ui.view">
+        <field name="name">qs2.media.plan.list</field>
+        <field name="model">qs2.media.plan</field>
+        <field name="arch" type="xml">
+            <list string="Piani Media" default_order="year desc, month desc"
+                  decoration-muted="not active">
+                <field name="campaign_id"/>
+                <field name="source_id"/>
+                <field name="brand_id" optional="show"/>
+                <field name="medium_id" optional="hide"/>
+                <field name="month"/>
+                <field name="year"/>
+                <field name="cost" sum="Totale Costo"/>
+                <field name="impressions" sum="Totale Impressions" optional="hide"/>
+                <field name="clicks" sum="Totale Click" optional="hide"/>
+                <field name="lead_count" sum="Totale Lead"/>
+                <field name="cpl"/>
+                <field name="conversions" sum="Totale Conv." optional="show"/>
+                <field name="revenue" sum="Totale Ricavo" optional="show"/>
+                <field name="roas" optional="show"/>
+                <field name="cpa" optional="hide"/>
+                <field name="ctr" optional="hide"/>
+                <field name="cpc" optional="hide"/>
+                <field name="active" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Media Plan — Search -->
+    <record id="qs2_media_plan_search" model="ir.ui.view">
+        <field name="name">qs2.media.plan.search</field>
+        <field name="model">qs2.media.plan</field>
+        <field name="arch" type="xml">
+            <search string="Piani Media">
+                <field name="campaign_id"/>
+                <field name="source_id"/>
+                <field name="brand_id"/>
+                <field name="medium_id"/>
+                <separator/>
+                <filter name="filter_current_year" string="Anno corrente"
+                        domain="[('year', '=', time.strftime('%%Y'))]"/>
+                <separator/>
+                <group>
+                    <filter name="group_campaign" string="Campagna"
+                            context="{'group_by': 'campaign_id'}"/>
+                    <filter name="group_source" string="Origine"
+                            context="{'group_by': 'source_id'}"/>
+                    <filter name="group_brand" string="Brand"
+                            context="{'group_by': 'brand_id'}"/>
+                    <filter name="group_medium" string="Mezzo"
+                            context="{'group_by': 'medium_id'}"/>
+                    <filter name="group_year" string="Anno"
+                            context="{'group_by': 'year'}"/>
+                    <filter name="group_month" string="Mese"
+                            context="{'group_by': 'month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Media Plan — Pivot -->
+    <record id="qs2_media_plan_pivot" model="ir.ui.view">
+        <field name="name">qs2.media.plan.pivot</field>
+        <field name="model">qs2.media.plan</field>
+        <field name="arch" type="xml">
+            <pivot string="Piani Media">
+                <field name="campaign_id" type="row"/>
+                <field name="source_id" type="col"/>
+                <field name="cost" type="measure"/>
+                <field name="lead_count" type="measure"/>
+                <field name="conversions" type="measure"/>
+                <field name="revenue" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- Media Plan — Graph -->
+    <record id="qs2_media_plan_graph" model="ir.ui.view">
+        <field name="name">qs2.media.plan.graph</field>
+        <field name="model">qs2.media.plan</field>
+        <field name="arch" type="xml">
+            <graph string="Piani Media" type="bar">
+                <field name="month" type="row"/>
+                <field name="cost" type="measure"/>
+                <field name="lead_count" type="measure"/>
+                <field name="revenue" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- Media Plan — Action -->
+    <record id="action_qs2_media_plan" model="ir.actions.act_window">
+        <field name="name">Piani Media</field>
+        <field name="res_model">qs2.media.plan</field>
+        <field name="view_mode">list,form,pivot,graph</field>
+        <field name="context">{'search_default_filter_current_year': 1}</field>
+    </record>
+
+</odoo>

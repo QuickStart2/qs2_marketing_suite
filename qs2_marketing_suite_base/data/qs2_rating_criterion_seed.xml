@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <!-- Criteri di rating lead di default — il cliente può modificarli/disabilitarli
+         senza problemi. Sono volutamente generici e basati su campi standard del CRM. -->
+
+    <record id="rating_criterion_has_email" model="qs2.lead.rating.criterion">
+        <field name="name">Email valorizzata</field>
+        <field name="sequence">10</field>
+        <field name="kind">truthy</field>
+        <field name="field_name">email_from</field>
+        <field name="weight">1</field>
+        <field name="description">Il lead ha un'email — minimo per qualsiasi follow-up.</field>
+    </record>
+
+    <record id="rating_criterion_has_phone" model="qs2.lead.rating.criterion">
+        <field name="name">Telefono valorizzato</field>
+        <field name="sequence">20</field>
+        <field name="kind">truthy</field>
+        <field name="field_name">phone</field>
+        <field name="weight">2</field>
+        <field name="description">Numero di telefono presente — il venditore può chiamare.</field>
+    </record>
+
+    <record id="rating_criterion_has_company" model="qs2.lead.rating.criterion">
+        <field name="name">Azienda identificata</field>
+        <field name="sequence">30</field>
+        <field name="kind">truthy</field>
+        <field name="field_name">partner_name</field>
+        <field name="weight">1</field>
+        <field name="description">Nome dell'azienda fornito (B2B) — qualifica del lead.</field>
+    </record>
+
+    <record id="rating_criterion_has_ad" model="qs2.lead.rating.criterion">
+        <field name="name">Inserzione tracciata</field>
+        <field name="sequence">40</field>
+        <field name="kind">truthy</field>
+        <field name="field_name">qs2_ad_id</field>
+        <field name="weight">1</field>
+        <field name="description">È noto da quale creatività arriva il lead — pain point identificato.</field>
+    </record>
+
+    <record id="rating_criterion_revenue_above_1k" model="qs2.lead.rating.criterion">
+        <field name="name">Ricavo atteso &gt; 1.000 €</field>
+        <field name="sequence">50</field>
+        <field name="kind">domain</field>
+        <field name="domain">[('expected_revenue', '&gt;', 1000)]</field>
+        <field name="weight">2</field>
+        <field name="description">Lead di valore commerciale apprezzabile.</field>
+    </record>
+
+</odoo>
