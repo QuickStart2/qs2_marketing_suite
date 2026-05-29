@@ -23,8 +23,10 @@
     ],
     "data": [
         "data/bi_sql_views.xml",
-        "views/marketing_report_search.xml",
     ],
-    "post_init_hook": "_post_init_apply_search_views",
+    # NB: la search view PWR (views/marketing_report_search.xml) NON è caricata
+    # all'install perché punta al modello x_bi_sql_view.marketing_report che
+    # esiste solo DOPO "Crea Modello/Interfaccia" in bi_sql_editor. Va applicata
+    # a valle della validazione del report (vedi README / script di setup).
     "installable": True,
 }
