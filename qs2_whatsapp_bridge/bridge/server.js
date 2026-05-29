@@ -23,10 +23,25 @@ const sseClients = []; // Server-Sent Events subscribers
 // ---------------------------------------------------------------------------
 // WhatsApp client (Puppeteer-based)
 // ---------------------------------------------------------------------------
+// Versione di WhatsApp Web da caricare. Pinnata a una snapshot nota perché,
+// con il default `webVersionCache: {type:'local'}`, whatsapp-web.js carica la
+// WhatsApp Web *live*: quando WA aggiorna il client web, l'iniezione degli
+// script della libreria fallisce con
+//   ProtocolError: Execution context was destroyed (Client.inject)
+// e il bridge va in crash-loop. Pinnando una HTML snapshot remota la versione
+// resta stabile e compatibile con la lib installata.
+// Override possibile via env WA_WEB_VERSION (deve esistere nel repo wa-version).
+const WA_WEB_VERSION = process.env.WA_WEB_VERSION || "2.3000.1040385143-alpha";
+
 const client = new Client({
   authStrategy: new LocalAuth({
     dataPath: process.env.WA_AUTH_PATH || path.join(__dirname, "auth_state"),
   }),
+  webVersion: WA_WEB_VERSION,
+  webVersionCache: {
+    type: "remote",
+    remotePath: `https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/${WA_WEB_VERSION}.html`,
+  },
   puppeteer: {
     headless: true,
     args: [
@@ -98,6 +113,31 @@ client.on("message", async (msg) => {
     phoneNumber = rawFrom.split("@")[0];
   }
 
+  // Scarica l'immagine allegata (se presente). Solo immagini: un catalogo/lista
+  // ricambi inviato come foto/screenshot. base64 + mimetype, con cap dimensione.
+  let mediaType = null;
+  let media = null;
+  if (msg.hasMedia && msg.type === "image") {
+    try {
+      const m = await msg.downloadMedia();
+      if (m && m.data) {
+        if (m.data.length <= 14000000) {
+          // ~10 MB decoded
+          mediaType = "image";
+          media = {
+            mimetype: m.mimetype,
+            data: m.data,
+            filename: m.filename || null,
+          };
+        } else {
+          console.log("⚠  immagine troppo grande, ignorata");
+        }
+      }
+    } catch (err) {
+      console.error(`✗ download media fallito: ${err.message}`);
+    }
+  }
+
   const entry = {
     id: msg.id._serialized,
     from: rawFrom,
@@ -109,6 +149,8 @@ client.on("message", async (msg) => {
     text: msg.body || "",
     timestamp: msg.timestamp,
     isGroup: chat.isGroup,
+    mediaType: mediaType, // "image" | null
+    media: media, // { mimetype, data(base64), filename } | null
   };
 
   // Push to poll queue

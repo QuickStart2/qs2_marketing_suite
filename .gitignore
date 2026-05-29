@@ -1,0 +1,29 @@
+# ---------------------------------------------------------------------------
+# Python
+# ---------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# ---------------------------------------------------------------------------
+# Node / WhatsApp bridge runtime artifacts (NON committare)
+# ---------------------------------------------------------------------------
+qs2_whatsapp_bridge/bridge/node_modules/
+# Sessione WhatsApp Web (LocalAuth) — contiene credenziali: MAI in git
+qs2_whatsapp_bridge/bridge/auth_state/
+qs2_whatsapp_bridge/bridge/auth_state.bak*/
+qs2_whatsapp_bridge/bridge/auth_state_from_customaddons_*/
+# Cache versione WhatsApp Web scaricata a runtime
+qs2_whatsapp_bridge/bridge/.wwebjs_cache/
+qs2_whatsapp_bridge/bridge/.wwebjs_auth/
+# Log
+qs2_whatsapp_bridge/bridge/logs/
+*.log
+
+# ---------------------------------------------------------------------------
+# OS / editor
+# ---------------------------------------------------------------------------
+.DS_Store
+*.swp
+*~
