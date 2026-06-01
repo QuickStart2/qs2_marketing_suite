@@ -53,6 +53,27 @@ const client = new Client({
   },
 });
 
+// Map a LID JID ("<lid>@lid") to the real phone digits using WhatsApp's internal
+// resolver (queries WA servers when needed). Returns "" when the number is
+// genuinely hidden behind the LID and cannot be resolved.
+async function resolveLidToPhone(lidJid) {
+  try {
+    const pn = await client.pupPage.evaluate(async (id) => {
+      try {
+        const r = await window.WWebJS.enforceLidAndPnRetrieval(id);
+        return (r && r.phone && r.phone._serialized) || "";
+      } catch (_) {
+        return "";
+      }
+    }, lidJid);
+    return typeof pn === "string" && pn.endsWith("@c.us")
+      ? pn.split("@")[0]
+      : "";
+  } catch (_) {
+    return "";
+  }
+}
+
 // --- QR code ---
 client.on("qr", async (qr) => {
   connectionStatus = "qr";
@@ -87,31 +108,29 @@ client.on("message", async (msg) => {
   const contact = await msg.getContact();
   const chat = await msg.getChat();
 
-  // Resolve real phone number — WhatsApp may use LID (Linked Identity)
-  // instead of the actual phone number
+  // Resolve the REAL phone number. With WhatsApp LID (Linked Identity) privacy,
+  // msg.from can be "<lid>@lid" and contact.number (= the contact's userid) is
+  // then the LID digits, NOT the phone — trusting it pollutes Odoo's
+  // conversation.phone with a "service id". Resolve in strict order instead:
   let phoneNumber = "";
   const rawFrom = msg.from || "";
+  // whatsapp-web.js rewrites a LID contact's id to "<phone>@c.us" once the phone
+  // is known, so contact.id is the most reliable source when it's a @c.us.
+  const contactSerialized = contact.id?._serialized || "";
 
-  if (contact.number) {
-    // Best source: contact's actual phone number
-    phoneNumber = contact.number;
+  if (contactSerialized.endsWith("@c.us")) {
+    // Real phone: normal contact, or LID contact whose phone WA already exposes.
+    phoneNumber = contactSerialized.split("@")[0];
   } else if (rawFrom.endsWith("@c.us")) {
-    // Standard format: 39328...@c.us
+    // Sender JID is already a phone number.
     phoneNumber = rawFrom.split("@")[0];
   } else if (rawFrom.endsWith("@lid")) {
-    // LID format — try to get number from contact id
-    const contactId = contact.id?._serialized || contact.id || "";
-    if (contactId.endsWith("@c.us")) {
-      phoneNumber = contactId.split("@")[0];
-    }
+    // LID with hidden phone: force WhatsApp to map the LID -> phone number.
+    phoneNumber = await resolveLidToPhone(rawFrom);
   }
-
-  // Fallback: only accept raw JID if it's a real phone (@c.us).
-  // For @lid we deliberately leave phoneNumber empty — passing the LID digits
-  // as if they were a phone would pollute the Odoo conversation.phone field.
-  if (!phoneNumber && rawFrom.endsWith("@c.us")) {
-    phoneNumber = rawFrom.split("@")[0];
-  }
+  // If still empty, the phone is genuinely hidden behind the LID: leave it empty
+  // and rely on chatId (stored as wa_jid in Odoo) for replies, rather than
+  // storing the LID digits as if they were a phone number.
 
   // Scarica l'immagine allegata (se presente). Solo immagini: un catalogo/lista
   // ricambi inviato come foto/screenshot. base64 + mimetype, con cap dimensione.
@@ -196,10 +215,15 @@ app.post("/send", async (req, res) => {
     return res.status(503).json({ error: "WhatsApp not connected" });
   }
 
-  // Normalize: whatsapp-web.js wants "39328...@c.us" format
+  // Normalize: whatsapp-web.js wants "39328...@c.us" format.
   let chatId = to;
   if (!chatId.includes("@")) {
     chatId = `${chatId.replace(/\D/g, "")}@c.us`;
+  } else if (chatId.endsWith("@lid")) {
+    // Prefer sending to the resolved phone when WA exposes it; otherwise send to
+    // the LID chat directly (whatsapp-web.js routes "<lid>@lid" correctly).
+    const phone = await resolveLidToPhone(chatId);
+    if (phone) chatId = `${phone}@c.us`;
   }
 
   try {

@@ -82,7 +82,11 @@ class WhatsAppConversation(models.Model):
         """Invia un messaggio in questa conversazione."""
         self.ensure_one()
         account = self.env["whatsapp.account"].get_default_account()
-        result = account._bridge_post("/send", {"to": self.phone, "message": body})
+        # Invia al chat id stabile (wa_jid) quando disponibile: è esattamente il
+        # thread a cui appartengono i messaggi e funziona anche quando il numero
+        # del contatto è nascosto dietro un LID. Fallback al numero di telefono.
+        to = self.wa_jid if (self.wa_jid and "@" in self.wa_jid) else self.phone
+        result = account._bridge_post("/send", {"to": to, "message": body})
 
         if not result or not result.get("ok"):
             error = result.get("error", "Errore sconosciuto") if result else "Bridge non raggiungibile"
