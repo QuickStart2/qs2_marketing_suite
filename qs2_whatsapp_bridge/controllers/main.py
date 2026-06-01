@@ -181,7 +181,7 @@ class WhatsAppController(http.Controller):
             else:
                 dt = datetime.now()
 
-            new_msg = Message.create({
+            msg_vals = {
                 "conversation_id": conv.id,
                 "direction": "in",
                 "body": msg.get("text", ""),
@@ -189,10 +189,48 @@ class WhatsAppController(http.Controller):
                 "timestamp": dt,
                 "state": "delivered",
                 "author_name": msg.get("pushName", ""),
-            })
+            }
+
+            # Allegato media (per ora solo immagini — il bridge gia' filtra a "image").
+            # Importante: creiamo l'attachment PRIMA del messaggio cosi' eventuali
+            # override di whatsapp.message.create() (vedi qs2_whatsapp_image_order)
+            # trovano gia' media_attachment_id valorizzato e possono lavorare al volo.
+            media = msg.get("media") or {}
+            media_type = msg.get("mediaType")
+            attachment = None
+            if media_type and media.get("data"):
+                media_mimetype = media.get("mimetype") or "image/jpeg"
+                media_filename = (
+                    media.get("filename")
+                    or f"whatsapp_{wa_id or 'msg'}.{media_mimetype.split('/')[-1]}"
+                )
+                attachment = env["ir.attachment"].sudo().create({
+                    "name": media_filename,
+                    "datas": media["data"],  # gia' base64
+                    "mimetype": media_mimetype,
+                    # res_model/res_id verranno settati subito dopo, una volta
+                    # noto l'id del messaggio.
+                })
+                msg_vals.update({
+                    "has_media": True,
+                    "media_type": media_type,
+                    "media_mimetype": media_mimetype,
+                    "media_filename": media_filename,
+                    "media_attachment_id": attachment.id,
+                })
+
+            new_msg = Message.create(msg_vals)
+
+            if attachment:
+                attachment.sudo().write({
+                    "res_model": "whatsapp.message",
+                    "res_id": new_msg.id,
+                })
+
+            preview = msg.get("text", "") or ("[immagine]" if media_type else "")
             conv.write({
                 "last_message_date": dt,
-                "last_message_preview": msg.get("text", "")[:100],
+                "last_message_preview": preview[:100],
                 "unread_count": conv.unread_count + 1,
             })
             created.append({
@@ -201,6 +239,8 @@ class WhatsAppController(http.Controller):
                 "body": new_msg.body,
                 "direction": "in",
                 "timestamp": dt.isoformat(),
+                "has_media": new_msg.has_media,
+                "media_type": new_msg.media_type or "",
             })
 
         return created

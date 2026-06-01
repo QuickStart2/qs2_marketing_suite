@@ -42,6 +42,21 @@ class WhatsAppMessage(models.Model):
         string="Contatto",
         store=True,
     )
+    # Allegato media (immagine, in futuro audio/video). Salvato come ir.attachment
+    # così l'UI di Odoo può visualizzarlo nativamente e altri moduli (es.
+    # qs2_whatsapp_image_order) possono leggerlo senza duplicare il blob.
+    has_media = fields.Boolean(string="Ha allegato", default=False, index=True)
+    media_type = fields.Selection(
+        [("image", "Immagine")],
+        string="Tipo media",
+    )
+    media_mimetype = fields.Char(string="MIME")
+    media_filename = fields.Char(string="Nome file")
+    media_attachment_id = fields.Many2one(
+        "ir.attachment",
+        string="Allegato",
+        ondelete="set null",
+    )
 
     @api.model_create_multi
     def create(self, vals_list):
