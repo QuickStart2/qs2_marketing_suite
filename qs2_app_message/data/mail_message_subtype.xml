@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="mt_app_message" model="mail.message.subtype">
+        <field name="name">Messaggio verso App</field>
+        <field name="description">Messaggio destinato all'app esterna, consegnato tramite middleware.</field>
+        <field name="res_model">qs2.app.message</field>
+        <field name="internal" eval="True"/>
+        <field name="default" eval="False"/>
+        <field name="hidden" eval="True"/>
+        <field name="sequence" eval="100"/>
+    </record>
+</odoo>

@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="qs2_app_message_view_form" model="ir.ui.view">
+        <field name="name">qs2.app.message.form</field>
+        <field name="model">qs2.app.message</field>
+        <field name="arch" type="xml">
+            <form string="Messaggio verso App">
+                <header>
+                    <button name="action_send" type="object" string="Invia ora"
+                            class="oe_highlight" invisible="state != 'draft'"
+                            data-hotkey="v"/>
+                    <button name="action_schedule" type="object" string="Programma invio"
+                            invisible="state != 'draft' or not scheduled_date"
+                            data-hotkey="p"/>
+                    <button name="action_send" type="object" string="Invia adesso"
+                            class="oe_highlight" invisible="state != 'scheduled'"/>
+                    <button name="action_cancel_schedule" type="object"
+                            string="Annulla programmazione" invisible="state != 'scheduled'"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,scheduled,sent"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_notifications" type="object"
+                                class="oe_stat_button" icon="fa-paper-plane"
+                                invisible="state == 'draft'">
+                            <field name="delivered_count" widget="statinfo"
+                                   string="Consegnati"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1>
+                            <field name="name" placeholder="Oggetto del messaggio"
+                                   readonly="state != 'draft'"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="recipient_mode" widget="radio"
+                                   readonly="state != 'draft'"/>
+                            <field name="target_user_id"
+                                   invisible="recipient_mode != 'user'"
+                                   required="recipient_mode == 'user'"
+                                   readonly="state != 'draft'"
+                                   options="{'no_create': True}"/>
+                            <field name="target_list_id"
+                                   invisible="recipient_mode != 'list'"
+                                   required="recipient_mode == 'list'"
+                                   readonly="state != 'draft'"
+                                   options="{'no_create': True}"/>
+                        </group>
+                        <group>
+                            <field name="author_user_id"/>
+                            <field name="scheduled_date" invisible="state == 'sent'"
+                                   readonly="state == 'scheduled'"/>
+                            <field name="sent_date" invisible="state != 'sent'"/>
+                            <field name="recipient_count" invisible="state != 'sent'"/>
+                            <field name="delivery_state" widget="badge"
+                                   invisible="state != 'sent'"
+                                   decoration-success="delivery_state == 'delivered'"
+                                   decoration-warning="delivery_state in ('pending', 'partial')"/>
+                        </group>
+                    </group>
+                    <separator string="Messaggio"/>
+                    <field name="body" widget="html" readonly="state != 'draft'"
+                           placeholder="Scrivi qui il messaggio da inviare all'app..."/>
+                    <field name="recipient_partner_ids" widget="many2many_tags"
+                           invisible="state != 'sent'" readonly="1"/>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="qs2_app_message_view_list" model="ir.ui.view">
+        <field name="name">qs2.app.message.list</field>
+        <field name="model">qs2.app.message</field>
+        <field name="arch" type="xml">
+            <list string="Messaggi verso App" decoration-muted="state == 'draft'">
+                <field name="create_date" string="Creato"/>
+                <field name="name"/>
+                <field name="author_user_id"/>
+                <field name="recipient_mode"/>
+                <field name="scheduled_date" optional="show"/>
+                <field name="recipient_count" string="Dest."/>
+                <field name="delivered_count" string="Consegnati"/>
+                <field name="delivery_state" widget="badge"
+                       decoration-success="delivery_state == 'delivered'"
+                       decoration-warning="delivery_state in ('pending', 'partial')"/>
+                <field name="state" widget="badge"
+                       decoration-info="state == 'draft'"
+                       decoration-warning="state == 'scheduled'"
+                       decoration-success="state == 'sent'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="qs2_app_message_view_search" model="ir.ui.view">
+        <field name="name">qs2.app.message.search</field>
+        <field name="model">qs2.app.message</field>
+        <field name="arch" type="xml">
+            <search string="Messaggi verso App">
+                <field name="name"/>
+                <field name="author_user_id"/>
+                <field name="target_user_id"/>
+                <field name="target_list_id"/>
+                <filter name="filter_draft" string="Bozze" domain="[('state', '=', 'draft')]"/>
+                <filter name="filter_scheduled" string="Programmati" domain="[('state', '=', 'scheduled')]"/>
+                <filter name="filter_sent" string="Inviati" domain="[('state', '=', 'sent')]"/>
+                <filter name="filter_undelivered" string="Da consegnare"
+                        domain="[('state', '=', 'sent'), ('app_message_id.notification_ids.notification_status', 'in', ('ready', 'process', 'pending'))]"/>
+                <separator/>
+                <filter name="group_state" string="Stato"
+                        context="{'group_by': 'state'}"/>
+                <filter name="group_author" string="Mittente"
+                        context="{'group_by': 'author_user_id'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_qs2_app_message" model="ir.actions.act_window">
+        <field name="name">Messaggi verso App</field>
+        <field name="res_model">qs2.app.message</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="qs2_app_message_view_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Componi un nuovo messaggio verso l'App
+            </p>
+            <p>
+                Scrivi un messaggio, scegli un utente o una lista di distribuzione e
+                invialo. Verrà consegnato dal middleware esterno.
+            </p>
+        </field>
+    </record>
+</odoo>

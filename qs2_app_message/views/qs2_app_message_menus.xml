@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_app_message_root"
+              name="Messaggi App"
+              sequence="95"
+              groups="group_app_message_user"/>
+
+    <menuitem id="menu_app_message_outbox"
+              name="Messaggi"
+              parent="menu_app_message_root"
+              action="action_qs2_app_message"
+              sequence="10"/>
+
+    <menuitem id="menu_app_message_notifications"
+              name="Consegne App"
+              parent="menu_app_message_root"
+              action="action_app_notifications"
+              sequence="20"/>
+
+    <menuitem id="menu_app_message_config"
+              name="Configurazione"
+              parent="menu_app_message_root"
+              sequence="90"
+              groups="group_app_message_manager"/>
+
+    <menuitem id="menu_app_distribution_list"
+              name="Liste di distribuzione"
+              parent="menu_app_message_config"
+              action="action_qs2_app_distribution_list"
+              sequence="10"/>
+</odoo>

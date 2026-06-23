@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Module category + privilege (v19: res.groups link via privilege_id) -->
+    <record id="module_category_app_messages" model="ir.module.category">
+        <field name="name">Messaggi App</field>
+        <field name="sequence">90</field>
+    </record>
+
+    <record id="app_message_privilege" model="res.groups.privilege">
+        <field name="name">Messaggi verso App</field>
+        <field name="category_id" ref="module_category_app_messages"/>
+        <field name="sequence">10</field>
+    </record>
+
+    <!-- Sender: can compose and send app messages, read the distribution lists -->
+    <record id="group_app_message_user" model="res.groups">
+        <field name="name">Utente — invio messaggi App</field>
+        <field name="privilege_id" ref="app_message_privilege"/>
+        <field name="implied_ids" eval="[Command.link(ref('base.group_user'))]"/>
+    </record>
+
+    <!-- Manager: configures distribution lists, full access -->
+    <record id="group_app_message_manager" model="res.groups">
+        <field name="name">Amministratore — Messaggi App</field>
+        <field name="privilege_id" ref="app_message_privilege"/>
+        <field name="implied_ids" eval="[Command.link(ref('group_app_message_user'))]"/>
+    </record>
+
+    <!-- Middleware integration account: read app messages, read/write app
+         notifications (mark delivered). Independent technical group. -->
+    <record id="group_app_message_middleware" model="res.groups">
+        <field name="name">Middleware — Integrazione App</field>
+        <field name="implied_ids" eval="[Command.link(ref('base.group_user'))]"/>
+    </record>
+
+    <!-- Convenience: grant the admin the manager role on install -->
+    <record id="base.user_admin" model="res.users">
+        <field name="group_ids" eval="[Command.link(ref('group_app_message_manager'))]"/>
+    </record>
+</odoo>

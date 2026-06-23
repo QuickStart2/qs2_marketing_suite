@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- The base rule 'ir_rule_mail_notifications_group_user' restricts internal
+         users to writing ONLY their own notifications (res_partner_id = own
+         partner). Group rules are OR-combined, so this rule lets the middleware
+         account read/write every 'app' notification regardless of recipient,
+         which is exactly what it needs to flip the status to 'sent'. -->
+    <record id="rule_app_notification_middleware" model="ir.rule">
+        <field name="name">App notifications: middleware read/write</field>
+        <field name="model_id" ref="mail.model_mail_notification"/>
+        <field name="groups" eval="[Command.link(ref('group_app_message_middleware'))]"/>
+        <field name="domain_force">[('notification_type', '=', 'app')]</field>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+</odoo>

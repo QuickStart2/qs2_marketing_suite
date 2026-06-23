@@ -1,0 +1,6 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_qs2_app_message_user,qs2.app.message.user,model_qs2_app_message,group_app_message_user,1,1,1,1
+access_qs2_app_message_middleware,qs2.app.message.middleware,model_qs2_app_message,group_app_message_middleware,1,0,0,0
+access_qs2_app_distribution_list_user,qs2.app.distribution.list.user,model_qs2_app_distribution_list,group_app_message_user,1,0,0,0
+access_qs2_app_distribution_list_manager,qs2.app.distribution.list.manager,model_qs2_app_distribution_list,group_app_message_manager,1,1,1,1
+access_qs2_app_distribution_list_middleware,qs2.app.distribution.list.middleware,model_qs2_app_distribution_list,group_app_message_middleware,1,0,0,0
