@@ -11,7 +11,7 @@
         - POST /assist_excel_form/    — Crea task di progetto
         - POST /crm_hr_form/          — Crea candidatura HR
     """,
-    "version": "19.0.1.0.0",
+    "version": "19.0.1.0.1",
     "category": "Sales",
     "author": "QuickStart2, Leonardo Guerra",
     "license": "AGPL-3",

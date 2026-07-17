@@ -104,7 +104,6 @@ class LeadWebhookMain(http.Controller):
             "medium_id": medium_id or False,
             "campaign_id": campaign_id or False,
             "description": description,
-            "user_id": routed_user_id or False,
             "team_id": routed_team_id or False,
             "qs2_initiative": iniziativa,
             "qs2_brand_id": brand_id or False,
@@ -112,6 +111,11 @@ class LeadWebhookMain(http.Controller):
             "qs2_ad_id": qs2_ad_id,
         }
         vals = {k: v for k, v in vals.items() if v not in (None, "", 0)}
+        # user_id va passato sempre, anche a False: se la chiave manca, Odoo
+        # applica il default di crm.lead (l'utente della sessione, che su una
+        # route auth="public" è il Public user). Il lead risulterebbe assegnato
+        # e verrebbe escluso dall'assegnazione automatica del team.
+        vals["user_id"] = routed_user_id or False
         crm_lead = request.env["crm.lead"].sudo().create(vals)
         return "OK " + str(crm_lead.id)
 

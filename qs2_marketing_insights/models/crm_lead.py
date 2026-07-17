@@ -290,7 +290,7 @@ class CrmLead(models.Model):
                 "kind": "mail",
                 "group": GROUP_COMM,
                 "title": title,
-                "subtitle": subject or (m.author_id.name if m.author_id else "")[:120],
+                "subtitle": (subject or m.author_id.name or "")[:120],
                 "icon": icon,
                 "body_html": body[:600] if body else False,
                 "link": False,

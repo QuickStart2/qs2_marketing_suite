@@ -1,6 +1,6 @@
 {
     "name": "Web Tracking",
-    "version": "19.0.1.0.0",
+    "version": "19.0.1.0.1",
     "category": "Marketing",
     "summary": "Codice tracking univoco e tracciamento visite web",
     "description": """

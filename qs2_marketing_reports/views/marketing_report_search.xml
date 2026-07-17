@@ -10,9 +10,15 @@
         - filtri per piattaforma pubblicitaria
         - group_by su tutte le dimensioni significative
 
-        NB: bi_sql_editor sovrascrive search_view_id quando si rigenera la UI.
-        Per ri-applicare dopo "Crea Interfaccia" usa il record qui sotto
-        (oppure il post-init hook nel manifest).
+        NB: questo file NON è caricato dal manifest, e non può esserlo: il
+        modello x_bi_sql_view.marketing_report nasce solo dopo "Crea Modello /
+        Crea Interfaccia" in bi_sql_editor, quindi all'install la view non
+        avrebbe un modello su cui agganciarsi.
+
+        Da applicare a mano dopo "Crea Interfaccia", che rigenera la search
+        view automatica e sovrascrive search_view_id. Per ri-applicare questa
+        view custom, search_view_id va scritto in DUE posti: sul record
+        bi.sql.view E sulla sua action_id.
     -->
     <record id="qs2_marketing_report_search" model="ir.ui.view">
         <field name="name">qs2.marketing.report.search</field>

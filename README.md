@@ -69,7 +69,7 @@ La porta d'ingresso dei lead. Espone 4 endpoint HTTP POST che permettono a siste
 > **Tutti e 4 gli endpoint sono `auth="public"` con `csrf=False` e nessun token, firma o segreto condiviso.** Chiunque conosca l'URL può creare record, e la creazione avviene in `sudo()`. C'è anche un vettore di spam sulle anagrafiche: gli endpoint fanno get-or-create di `utm.source`, `utm.medium`, `utm.campaign` e `qs2.brand`, quindi POST ripetute possono gonfiare le tabelle di configurazione. Da mettere dietro reverse proxy con IP allowlist, rate limiting o token condiviso prima di esporre in produzione.
 
 **Da sapere:**
-- Senza regole di routing e senza il parametro `qs2_lead_webhook.default_user_id`, il lead **non** resta senza venditore: eredita il default di `crm.lead` e finisce assegnato all'utente della sessione — cioè il superuser.
+- Se nessuna regola matcha e non è impostato il parametro `qs2_lead_webhook.default_user_id`, il lead resta **senza venditore**, quindi disponibile per l'assegnazione automatica del team. (Fino alla 19.0.1.0.0 ereditava il default di `crm.lead` e finiva assegnato al *Public user*, sparendo dall'assegnazione: corretto in 19.0.1.0.1.)
 - Le condizioni `country_ids`, `zip_pattern` e `lang` delle regole di routing non possono mai matchare per i lead in arrivo da `/crm_lead_form/` (il controller non popola quei campi).
 - `description` del lead contiene un **dump integrale della POST** (tutti i parametri valorizzati, mappati e non): utile come audit, ma occhio a cosa ci finisce dentro.
 - `depends` dichiara solo `base`, `crm`, `sales_team` e il base QS2, ma i controller usano `project.project`/`project.task` e `hr.applicant`: **dipendenze non dichiarate**.
@@ -93,7 +93,7 @@ Configurazione in *CRM > Configurazione*: Visite Web, Milestone tracking, Regole
 **Da sapere:**
 - Il tracking gira su **tutte** le pagine frontend (sito web e portale), non solo sulle pagine del sito: `#wrapwrap` è definito in `web.frontend_layout`.
 - I link con `?track=` **non vengono generati né inviati dal modulo**: il codice va letto dal contatto (scheda "Web Tracking", c'è il widget copia-negli-appunti) e messo a mano nelle email/SMS/WhatsApp.
-- Il codice **non è alfanumerico**, contrariamente a quanto dicono l'help del campo e la documentazione: è base64url uppercase, quindi può contenere `-` e `_`.
+- Il codice **non è alfanumerico**: è base64url in maiuscolo, quindi può contenere `-` e `_`. Resta URL-safe, che è ciò che serve al parametro `?track=`.
 - Il `post_init_hook` fa il backfill dei codici con una write per record: lento su database con molti partner.
 
 ---
@@ -131,7 +131,7 @@ Modulo di **sola configurazione**: nessun modello, nessun Python applicativo. Pr
 - Le query sono **PostgreSQL-specifiche**: `DATE_TRUNC`, `EXTRACT`, `regexp_replace`, `TO_DATE`, operatore jsonb `->>` per i campi tradotti.
 - Il `regexp_replace` su `x_nome_lead` **non è un'anonimizzazione**: toglie solo punteggiatura e accenti, il nome resta in chiaro. I report espongono email e telefono dei lead in chiaro.
 - La CTE `OrdFatt` scarta gli ordini con `amount_untaxed <= 10` e può gonfiare i conteggi per fan-out sul join.
-- `__init__.py` contiene codice morto (`_post_init_apply_search_views`): l'hook è stato rimosso dal manifest.
+- Dopo ogni *Crea Interfaccia*, `bi_sql_editor` rigenera la search view automatica e sovrascrive `search_view_id`: per ri-applicare quella custom va riscritto in due posti, sul `bi.sql.view` **e** sulla sua `action_id`.
 
 ---
 

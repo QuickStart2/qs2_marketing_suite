@@ -12,7 +12,7 @@ class ResPartner(models.Model):
         copy=False,
         index=True,
         readonly=True,
-        help="Codice univoco di 12 caratteri alfanumerici",
+        help="Codice univoco di 12 caratteri: A-Z, 0-9, '-' e '_' (base64url in maiuscolo)",
     )
     qs2_visit_ids = fields.One2many(
         "qs2.visit", "partner_id", string="Visite Web",
@@ -53,7 +53,11 @@ class ResPartner(models.Model):
         return super().create(vals_list)
 
     def _generate_tracking_code(self):
-        """Genera codice alfanumerico univoco di 12 caratteri."""
+        """Genera un codice univoco di 12 caratteri (base64url in maiuscolo).
+
+        L'alfabeto è A-Z, 0-9, '-' e '_': non è alfanumerico puro, ma è
+        URL-safe, che è ciò che serve al parametro ?track=CODE.
+        """
         while True:
             code = secrets.token_urlsafe(9)[:12].upper()
             if not self.search([("qs2_tracking_code", "=", code)], limit=1):

@@ -8,7 +8,7 @@
         - Metriche automatiche: CPL, CPC, CTR, CPA, ROAS, CPM
         - Funnel completo: Impression → Click → Lead → Conversione → Revenue
     """,
-    "version": "19.0.1.0.0",
+    "version": "19.0.1.0.1",
     "category": "Marketing",
     "author": "QuickStart2, Leonardo Guerra",
     "license": "AGPL-3",

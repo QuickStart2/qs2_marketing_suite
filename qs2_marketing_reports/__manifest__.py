@@ -11,7 +11,7 @@
         Per attivarli: aprire ciascun report e cliccare
         Valida SQL > Crea modello > Crea interfaccia.
     """,
-    "version": "19.0.1.0.0",
+    "version": "19.0.1.0.1",
     "category": "Marketing",
     "author": "QuickStart2, Leonardo Guerra",
     "license": "AGPL-3",

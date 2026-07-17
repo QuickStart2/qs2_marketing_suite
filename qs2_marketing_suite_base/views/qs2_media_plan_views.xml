@@ -45,7 +45,7 @@
                                 <group string="Awareness">
                                     <field name="impressions"/>
                                     <field name="clicks"/>
-                                    <field name="ctr" widget="percentage"/>
+                                    <field name="ctr"/>
                                     <field name="cpm"/>
                                 </group>
                                 <group string="Costo e Lead">
@@ -59,7 +59,7 @@
                                 <group string="Conversioni e Revenue">
                                     <field name="conversions"/>
                                     <field name="revenue"/>
-                                    <field name="conversion_rate" widget="percentage"/>
+                                    <field name="conversion_rate"/>
                                     <field name="cpa"/>
                                     <field name="roas"/>
                                 </group>

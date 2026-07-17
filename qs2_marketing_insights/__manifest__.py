@@ -12,7 +12,7 @@
 
         Il widget OWL viene incastonato nel form del lead come tab "Storia".
     """,
-    "version": "19.0.1.0.0",
+    "version": "19.0.1.0.1",
     "category": "Marketing",
     "author": "QuickStart2, Leonardo Guerra",
     "website": "https://www.quickstart2.com",
