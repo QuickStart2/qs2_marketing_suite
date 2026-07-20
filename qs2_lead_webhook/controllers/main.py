@@ -29,6 +29,9 @@ class LeadWebhookMain(http.Controller):
         city = post.get("citta") or post.get("city")
         street = post.get("street")
         provincia = post.get("provincia") or post.get("state")
+        cap = (post.get("cap") or post.get("zip") or "").strip() or False
+        paese = post.get("paese") or post.get("country") or post.get("country_code")
+        lingua = post.get("lingua") or post.get("lang")
 
         # UTM / origine
         utm_source = post.get("utm_source")
@@ -49,8 +52,11 @@ class LeadWebhookMain(http.Controller):
         if not name:
             return "Error"
 
-        # Provincia (Italia)
+        # Provincia (Italia), paese e lingua — servono al routing e al lead
         provincia_id = self._lookup_province(provincia)
+        country_id = self._lookup_country(paese, provincia_id)
+        lang_rec = self._lookup_lang(lingua)
+        lang_code = lang_rec.code if lang_rec else False
 
         # UTM
         source_id = self._get_or_create_record("utm.source", "name", utm_source)
@@ -77,7 +83,10 @@ class LeadWebhookMain(http.Controller):
         # Routing del lead: prima regola che matcha
         # (qs2.lead.routing.rule), poi fallback al parametro globale.
         lead_vals_for_routing = {
+            "country_id": country_id or False,
             "state_id": provincia_id,
+            "zip": cap,
+            "lang": lang_code,
             "source_id": source_id or False,
             "qs2_initiative": iniziativa,
             "qs2_brand_id": brand_id or False,
@@ -99,7 +108,10 @@ class LeadWebhookMain(http.Controller):
             "phone": phone,
             "city": city,
             "street": street,
+            "zip": cap,
             "state_id": provincia_id or False,
+            "country_id": country_id or False,
+            "lang_id": lang_rec.id or False,
             "source_id": source_id or False,
             "medium_id": medium_id or False,
             "campaign_id": campaign_id or False,
@@ -203,6 +215,62 @@ class LeadWebhookMain(http.Controller):
                 ("country_id", "=", country.id),
             ], limit=1)
         return st.id if st else False
+
+    def _lookup_country(self, paese, provincia_id=False):
+        """res.country per code ISO2 ('IT') o name esatto.
+
+        Se `paese` è fornito ma non risolve, ritorna False: NON deduce il paese
+        dalla provincia (eviterebbe di assegnare silenziosamente un paese
+        sbagliato). La deduzione dalla provincia scatta solo se `paese` è vuoto.
+        """
+        Country = request.env["res.country"].sudo()
+        if paese:
+            paese = paese.strip()
+            # code è size=2: Odoo tronca il valore di ricerca a 2 char, quindi
+            # "Francia" matcherebbe "FR". Tento il code solo per input ISO2.
+            country = Country.browse()
+            if len(paese) == 2:
+                country = Country.search([("code", "=", paese.upper())], limit=1)
+            if not country:
+                # name è traducibile (jsonb): confronto esatto su en_US per
+                # determinismo su una route pubblica (il lang del context varia).
+                country = Country.with_context(lang="en_US").search(
+                    [("name", "=", paese)], limit=1
+                )
+            if not country:
+                _logger.info("crm_lead_form: paese '%s' non risolto", paese)
+            return country.id if country else False
+        if provincia_id:
+            state = request.env["res.country.state"].sudo().browse(provincia_id)
+            return state.country_id.id or False
+        return False
+
+    def _lookup_lang(self, lingua):
+        """res.lang installato che matcha `lingua` (codice 'it_IT' o prefisso 'it').
+
+        Ritorna il recordset res.lang (vuoto se non risolto). Serve un codice
+        normalizzato perché il campo `lang` delle regole di routing è una
+        Selection su res.lang.get_installed().
+        """
+        Lang = request.env["res.lang"].sudo()
+        if not lingua:
+            return Lang.browse()
+        lingua = lingua.strip()
+        installed = [code for code, _name in Lang.get_installed()]
+        match = next((c for c in installed if c.lower() == lingua.lower()), None)
+        if not match:
+            # match per prefisso: preferisco it_IT quando lingua='it'
+            prefix = lingua.lower().split("_")[0]
+            candidates = [c for c in installed if c.split("_")[0].lower() == prefix]
+            if candidates:
+                canonical = f"{prefix}_{prefix.upper()}"
+                match = next(
+                    (c for c in candidates if c.lower() == canonical.lower()),
+                    sorted(candidates)[0],
+                )
+        if not match:
+            return Lang.browse()
+        return Lang.search([("code", "=", match)], limit=1)
 
     def _get_email_blocklist(self):
         """CSV in ir.config_parameter `qs2_lead_webhook.email_blocklist`."""

@@ -11,13 +11,14 @@
         Per attivarli: aprire ciascun report e cliccare
         Valida SQL > Crea modello > Crea interfaccia.
     """,
-    "version": "19.0.1.0.1",
+    "version": "19.0.1.0.2",
     "category": "Marketing",
     "author": "QuickStart2, Leonardo Guerra",
     "license": "AGPL-3",
     "depends": [
         "bi_sql_editor",
         "crm",
+        "sale_crm",  # la query marketing_report legge sale_order.opportunity_id
         "qs2_marketing_suite_base",
         "web_pivot_computed_measure",
     ],

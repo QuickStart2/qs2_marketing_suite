@@ -54,7 +54,7 @@ Sul lead aggiunge il tab **Marketing Insights** con la filiera completa (brand, 
 ---
 
 ### `qs2_lead_webhook` — Lead Webhook
-**v19.0.1.0.0 · dipende da:** `base`, `crm`, `sales_team`, `qs2_marketing_suite_base`
+**v19.0.1.1.0 · dipende da:** `base`, `crm`, `sales_team`, `project`, `hr_recruitment`, `qs2_marketing_suite_base`
 
 La porta d'ingresso dei lead. Espone 4 endpoint HTTP POST che permettono a sistemi esterni (Make/Integromat, chatbot, form di landing page) di creare record in Odoo. Mappa i parametri sui campi UTM standard **e** sui campi marketing QS2, poi un motore di regole (`qs2.lead.routing.rule`, configurabile da *CRM > Configurazione > Routing lead webhook*) assegna venditore e team senza hard-codare nulla nel controller.
 
@@ -62,19 +62,18 @@ La porta d'ingresso dei lead. Espone 4 endpoint HTTP POST che permettono a siste
 |----------|------|---------|-------|
 | `POST /crm_lead_form/` | `public` | Crea un lead CRM da form esterno | Funzionante |
 | `POST /crm_update_chatbot/` | `public` | Aggiorna un lead esistente identificato per telefono | Funzionante |
-| `POST /assist_excel_form/` | `public` | Crea un `project.task` da Excel/form | Richiede **Enterprise** + Studio |
-| `POST /crm_hr_form/` | `public` | Crea una candidatura HR | **Rotto su Odoo 19** |
+| `POST /assist_excel_form/` | `public` | Crea un `project.task` da Excel/form | Funzionante |
+| `POST /crm_hr_form/` | `public` | Crea una candidatura HR (`hr.applicant`) | Funzionante |
 
 > [!WARNING]
 > **Tutti e 4 gli endpoint sono `auth="public"` con `csrf=False` e nessun token, firma o segreto condiviso.** Chiunque conosca l'URL può creare record, e la creazione avviene in `sudo()`. C'è anche un vettore di spam sulle anagrafiche: gli endpoint fanno get-or-create di `utm.source`, `utm.medium`, `utm.campaign` e `qs2.brand`, quindi POST ripetute possono gonfiare le tabelle di configurazione. Da mettere dietro reverse proxy con IP allowlist, rate limiting o token condiviso prima di esporre in produzione.
 
 **Da sapere:**
 - Se nessuna regola matcha e non è impostato il parametro `qs2_lead_webhook.default_user_id`, il lead resta **senza venditore**, quindi disponibile per l'assegnazione automatica del team. (Fino alla 19.0.1.0.0 ereditava il default di `crm.lead` e finiva assegnato al *Public user*, sparendo dall'assegnazione: corretto in 19.0.1.0.1.)
-- Le condizioni `country_ids`, `zip_pattern` e `lang` delle regole di routing non possono mai matchare per i lead in arrivo da `/crm_lead_form/` (il controller non popola quei campi).
+- Le regole di routing possono filtrare su **paese, provincia, CAP, lingua, origine UTM, brand e iniziativa**. Il paese va inviato come **codice ISO2** (`IT`, `FR`) o nome inglese; se assente ma la provincia è nota, viene dedotto da quella. La lingua è normalizzata contro quelle installate (`it` → `it_IT`).
 - `description` del lead contiene un **dump integrale della POST** (tutti i parametri valorizzati, mappati e non): utile come audit, ma occhio a cosa ci finisce dentro.
-- `depends` dichiara solo `base`, `crm`, `sales_team` e il base QS2, ma i controller usano `project.project`/`project.task` e `hr.applicant`: **dipendenze non dichiarate**.
-- `/assist_excel_form/` richiede `worksheet.template`, modello **Enterprise-only**, e diversi campi Studio (`x_studio_*`, `x_impianti`, `x_adset`) che nessun modulo del repo crea.
-- `/crm_hr_form/` scrive `name`, `description` e `partner_mobile` su `hr.applicant`: campi che in Odoo 19 non esistono più (rimosso / rinominato `applicant_notes` / rinominato `partner_phone`). È codice Odoo ≤16 non portato — solleva `ValueError` anche con Studio a posto.
+- `/assist_excel_form/` crea `project.task` (richiede `project`, già in `depends`). Se è installata l'app FSM Enterprise, valorizza anche il *modello di foglio di lavoro*; su Community quel campo viene semplicemente ignorato. I dati extra del form finiscono nella descrizione del task.
+- `/crm_hr_form/` crea `hr.applicant` (richiede `hr_recruitment`, già in `depends`). Il nome del candidato in Selezione del Personale è `nome_candidatura` (fallback su `nome_e_cognome`); origine su campi UTM standard; il resto del form nelle note della candidatura.
 
 ---
 
@@ -115,7 +114,7 @@ Non richiede configurazione propria: non ha `data/`, non crea record, non ha hoo
 ---
 
 ### `qs2_marketing_reports` — Marketing Reports
-**v19.0.1.0.0 · dipende da:** `bi_sql_editor`, `crm`, `qs2_marketing_suite_base`, `web_pivot_computed_measure`
+**v19.0.1.0.2 · dipende da:** `bi_sql_editor`, `crm`, `sale_crm`, `qs2_marketing_suite_base`, `web_pivot_computed_measure`
 
 Modulo di **sola configurazione**: nessun modello, nessun Python applicativo. Precarica 3 report SQL basati su `bi_sql_editor` (OCA):
 
@@ -127,7 +126,7 @@ Modulo di **sola configurazione**: nessun modello, nessun Python applicativo. Pr
 > **Non è utilizzabile subito dopo l'install.** Crea 3 record `bi.sql.view` in stato **bozza**: nessun modello, nessuna vista, nessun menu. Per ciascuno serve aprire il report e premere *Valida SQL > Crea modello > Crea interfaccia*. Solo dopo esiste il modello `x_bi_sql_view.marketing_report`; a quel punto va applicata **a mano** la search view `views/marketing_report_search.xml`, deliberatamente esclusa dal manifest proprio perché il modello non esiste prima.
 
 **Da sapere:**
-- **`sale`/`sale_crm` non sono in `depends`** ma la query legge `sale_order.opportunity_id`: funziona per caso solo se qualcun altro (tipicamente `qs2_marketing_insights`) ha già tirato dentro `sale`. Installato da solo su un DB senza vendite, il report va in errore SQL.
+- La query legge `sale_order.opportunity_id`: da 19.0.1.0.2 `sale_crm` è dichiarato in `depends`, quindi installare la reportistica **tira dentro l'app Vendite** (voluto — prima il report andava in errore SQL su un DB senza vendite).
 - Le query sono **PostgreSQL-specifiche**: `DATE_TRUNC`, `EXTRACT`, `regexp_replace`, `TO_DATE`, operatore jsonb `->>` per i campi tradotti.
 - Il `regexp_replace` su `x_nome_lead` **non è un'anonimizzazione**: toglie solo punteggiatura e accenti, il nome resta in chiaro. I report espongono email e telefono dei lead in chiaro.
 - La CTE `OrdFatt` scarta gli ordini con `amount_untaxed <= 10` e può gonfiare i conteggi per fan-out sul join.
@@ -198,7 +197,7 @@ Nessuna configurazione: patcha globalmente il pivot, la voce "Computed Measure" 
 |------|------|---------|
 | **`bi_sql_editor`** | [OCA/reporting-engine](https://github.com/OCA/reporting-engine) branch `19.0` — **non incluso nel repo** | `qs2_marketing_reports` (dipendenza hard) |
 | **Node.js 22+, npm, Chromium** | sul server che ospita il bridge | `qs2_whatsapp_bridge` |
-| **Odoo Enterprise** | — | solo per `/assist_excel_form/` di `qs2_lead_webhook` (`worksheet.template`) |
+| **Odoo Enterprise** (opzionale) | — | `/assist_excel_form/` valorizza il *modello foglio di lavoro* FSM solo se presente; senza, il campo è ignorato |
 
 > [!TIP]
 > Asimmetria che confonde: `qs2_marketing_reports` ha due dipendenze OCA, ma `web_pivot_computed_measure` è **dentro** il repo e `bi_sql_editor` **no**. Se l'install fallisce con *module not found*, è quasi sempre `bi_sql_editor` che manca dagli `addons_path`.
@@ -235,7 +234,7 @@ Prima di andare in produzione, i punti che richiedono una scelta consapevole:
 
 ## Note di sviluppo
 
-- **Versioni per-modulo.** Tutti a `19.0.1.0.0` tranne `qs2_whatsapp_bridge` (`19.0.1.4.1`). Su Odoo.sh il bump di versione è ciò che triggera `-u`: incrementa la versione del modulo su ogni commit che lo tocca, o l'aggiornamento non parte.
+- **Versioni per-modulo.** Ogni modulo ha la sua versione (`qs2_lead_webhook` è a `19.0.1.1.0`, `qs2_whatsapp_bridge` a `19.0.1.4.1`, gli altri sulla linea `19.0.1.0.x`). Su Odoo.sh il bump di versione è ciò che triggera `-u`: incrementa la versione del modulo su ogni commit che lo tocca, o l'aggiornamento non parte.
 - **Artefatti runtime.** `bridge/auth_state/`, `bridge/node_modules/`, `.wwebjs_cache/` e i log sono gitignored e non vanno committati: contengono credenziali o sono rigenerabili.
 
 ## Licenza

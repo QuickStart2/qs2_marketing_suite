@@ -61,7 +61,10 @@ class LeadRoutingRule(models.Model):
     def route(self, vals):
         """Trova la prima regola che matcha e ritorna (user_id, team_id).
 
-        `vals` è il dict che sta per essere passato a crm.lead.create.
+        `vals` è un dict di routing ad-hoc (NON i create-vals di crm.lead), con
+        chiavi: country_id, state_id, zip, lang (codice tipo 'it_IT'),
+        source_id, qs2_brand_id, qs2_initiative. Per tolleranza `_matches`
+        accetta anche `lang_code`, il nome reale del campo su crm.lead.
         Ritorna `(False, False)` se nessuna regola matcha — il chiamante
         può fare il proprio fallback (es. system parameter).
         """
@@ -81,20 +84,15 @@ class LeadRoutingRule(models.Model):
             zip_val = (vals.get("zip") or "").strip()
             if not _match_glob(zip_val, self.zip_pattern):
                 return False
-        if self.lang and vals.get("lang") != self.lang:
+        if self.lang and self.lang not in (vals.get("lang"), vals.get("lang_code")):
             return False
         if self.source_ids and vals.get("source_id") not in self.source_ids.ids:
             return False
         if self.brand_ids:
-            brand_id = vals.get("qs2_brand_id")
-            # qs2_brand_id sul lead è related da qs2_ad_id — su create potrebbe
-            # non essere ancora valorizzato; verifico anche x_studio_brand legacy.
-            if not brand_id:
-                brand_id = vals.get("x_studio_brand")
-            if brand_id not in self.brand_ids.ids:
+            if vals.get("qs2_brand_id") not in self.brand_ids.ids:
                 return False
         if self.initiative_pattern:
-            iniz = vals.get("qs2_initiative") or vals.get("x_studio_iniziativa") or ""
+            iniz = vals.get("qs2_initiative") or ""
             if not _match_glob(iniz, self.initiative_pattern):
                 return False
         return True
