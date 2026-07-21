@@ -18,69 +18,103 @@
     </template>
 
     <!-- =========================================================== -->
-    <!-- Pipeline: /my/leads                                          -->
+    <!-- Priorità a stelle (riusabile)                                -->
+    <!-- =========================================================== -->
+    <template id="lead_priority_stars" name="Lead Priority Stars">
+        <span class="o_lead_star" t-att-title="'Priorità'">
+            <i t-attf-class="fa fa-star#{'' if lead.priority != '0' else '-o opacity-50'} text-warning"/>
+            <i t-attf-class="fa fa-star#{'' if lead.priority in ['2','3'] else '-o opacity-50'} text-warning"/>
+            <i t-attf-class="fa fa-star#{'' if lead.priority == '3' else '-o opacity-50'} text-warning"/>
+        </span>
+    </template>
+
+    <!-- =========================================================== -->
+    <!-- Card lead (riusabile nella pipeline)                         -->
+    <!-- =========================================================== -->
+    <template id="lead_card" name="Lead Card">
+        <a class="o_leads_card" draggable="true"
+           t-att-data-lead-id="lead.id"
+           t-attf-href="/my/leads/#{lead.id}">
+            <div class="o_leads_card_title text-truncate mb-1" t-out="lead.name or 'Lead'"/>
+            <div t-if="lead.tag_ids" class="d-flex flex-wrap gap-1 mb-1">
+                <t t-foreach="lead.tag_ids" t-as="tag">
+                    <span class="badge rounded-pill o_tag"
+                          t-attf-class="o_badge_color_#{tag.color}"
+                          t-out="tag.name"/>
+                </t>
+            </div>
+            <div t-if="lead.contact_name" class="small text-muted text-truncate" t-out="lead.contact_name"/>
+            <div class="d-flex align-items-center justify-content-between mt-1">
+                <t t-call="qs2_crm_portal.lead_priority_stars"/>
+                <small t-if="lead.city" class="text-muted text-truncate">
+                    <i class="fa fa-map-marker me-1"/><t t-out="lead.city"/>
+                </small>
+            </div>
+        </a>
+    </template>
+
+    <!-- =========================================================== -->
+    <!-- Pipeline kanban: /my/leads                                   -->
     <!-- =========================================================== -->
     <template id="portal_my_leads" name="My Leads">
         <t t-call="portal.portal_layout">
             <div class="o_portal_leads">
-                <div class="row mb-3">
-                    <div class="col-12">
+                <div class="row align-items-center mb-3">
+                    <div class="col">
                         <h3 class="mb-0">I miei lead</h3>
                         <p class="text-muted mb-0">
-                            Consulta i tuoi lead e aggiorna i dati di contatto.
+                            Trascina le schede tra le colonne per cambiare fase.
                         </p>
                     </div>
-                </div>
-
-                <!-- KPI in cima -->
-                <div class="row g-2 mb-4">
-                    <div class="col-6 col-md-3">
-                        <div class="card h-100 text-center">
-                            <div class="card-body py-3">
-                                <div class="fs-3 fw-bold" t-out="lead_total"/>
-                                <div class="text-muted small">Lead totali</div>
+                    <div class="col-auto">
+                        <div class="d-flex gap-2">
+                            <div class="card text-center">
+                                <div class="card-body py-2 px-3">
+                                    <div class="fs-4 fw-bold lh-1" t-out="lead_total"/>
+                                    <div class="text-muted small">Totali</div>
+                                </div>
                             </div>
-                        </div>
-                    </div>
-                    <t t-foreach="columns" t-as="col">
-                        <div class="col-6 col-md-3">
-                            <div class="card h-100 text-center">
-                                <div class="card-body py-3">
-                                    <div class="fs-3 fw-bold" t-out="len(col['leads'])"/>
-                                    <div class="text-muted small text-truncate"
-                                         t-out="col['stage'].name or 'Senza fase'"/>
+                            <div class="card text-center">
+                                <div class="card-body py-2 px-3">
+                                    <div class="fs-4 fw-bold lh-1 text-success" t-out="lead_won"/>
+                                    <div class="text-muted small">Vinti</div>
                                 </div>
                             </div>
                         </div>
-                    </t>
+                    </div>
                 </div>
 
-                <!-- Colonne pipeline -->
-                <t t-if="not columns">
+                <t t-if="lead_total == 0">
                     <div class="alert alert-info" role="alert">
                         Non hai ancora nessun lead assegnato.
                     </div>
                 </t>
-                <div t-if="columns" class="d-flex flex-nowrap overflow-auto gap-3 pb-3">
-                    <t t-foreach="columns" t-as="col">
-                        <div class="flex-shrink-0" style="width: 20rem;">
-                            <div class="d-flex align-items-center justify-content-between mb-2 px-1">
-                                <span class="fw-bold text-truncate" t-out="col['stage'].name or 'Senza fase'"/>
-                                <span class="badge text-bg-secondary" t-out="len(col['leads'])"/>
-                            </div>
-                            <t t-foreach="col['leads']" t-as="lead">
-                                <a t-attf-href="/my/leads/#{lead.id}"
-                                   class="card mb-2 text-decoration-none text-reset shadow-sm o_portal_lead_card">
-                                    <div class="card-body py-2 px-3">
-                                        <div class="fw-semibold text-truncate" t-out="lead.name or 'Lead'"/>
-                                        <div t-if="lead.contact_name" class="small text-muted text-truncate"
-                                             t-out="lead.contact_name"/>
-                                        <div t-if="lead.city" class="small text-muted text-truncate">
-                                            <i class="fa fa-map-marker me-1"/><t t-out="lead.city"/>
-                                        </div>
-                                    </div>
-                                </a>
+
+                <div t-if="lead_total &gt; 0" class="o_leads_kanban">
+                    <!-- Colonna "Senza fase" (non-droppable): mostra i lead senza
+                         stage così il totale coincide con le card visibili -->
+                    <div t-if="no_stage_leads" class="o_leads_col" style="--col-color: #a2a2a2">
+                        <div class="o_leads_col_head">
+                            <span class="text-truncate text-muted">Senza fase</span>
+                            <span class="o_leads_col_count" t-out="len(no_stage_leads)"/>
+                        </div>
+                        <div class="o_leads_col_body_static">
+                            <t t-foreach="no_stage_leads" t-as="lead">
+                                <t t-call="qs2_crm_portal.lead_card"/>
                             </t>
+                        </div>
+                    </div>
+                    <t t-foreach="columns" t-as="col">
+                        <div class="o_leads_col" t-attf-style="--col-color: #{col['color']}">
+                            <div class="o_leads_col_head">
+                                <span class="text-truncate" t-out="col['stage'].name"/>
+                                <span class="o_leads_col_count" t-out="len(col['leads'])"/>
+                            </div>
+                            <div class="o_leads_col_body" t-att-data-stage-id="col['stage'].id">
+                                <t t-foreach="col['leads']" t-as="lead">
+                                    <t t-call="qs2_crm_portal.lead_card"/>
+                                </t>
+                            </div>
                         </div>
                     </t>
                 </div>
@@ -89,26 +123,20 @@
     </template>
 
     <!-- =========================================================== -->
-    <!-- Dettaglio + form: /my/leads/<id>                             -->
+    <!-- Dettaglio: /my/leads/<id>                                    -->
     <!-- =========================================================== -->
     <template id="portal_my_lead" name="My Lead">
         <t t-call="portal.portal_layout">
-            <t t-set="o_portal_fullwidth_alert" groups="base.group_user">
-                <t t-call="portal.portal_back_in_edit_mode">
-                    <t t-set="backend_url" t-value="'/odoo/action-crm.crm_lead_all_leads/%s' % lead.id"/>
-                </t>
-            </t>
-
             <div class="row mb-2">
                 <div class="col-12 d-flex align-items-center justify-content-between">
                     <a href="/my/leads" class="btn btn-link px-0">
                         <i class="fa fa-chevron-left me-1"/>Torna ai lead
                     </a>
                     <div class="btn-group" role="group">
-                        <a t-if="prev_id" t-attf-href="/my/leads/#{prev_id}" class="btn btn-outline-secondary btn-sm">
+                        <a t-if="prev_id" t-attf-href="/my/leads/#{prev_id}" class="btn btn-outline-secondary btn-sm" title="Precedente">
                             <i class="fa fa-chevron-left"/>
                         </a>
-                        <a t-if="next_id" t-attf-href="/my/leads/#{next_id}" class="btn btn-outline-secondary btn-sm">
+                        <a t-if="next_id" t-attf-href="/my/leads/#{next_id}" class="btn btn-outline-secondary btn-sm" title="Successivo">
                             <i class="fa fa-chevron-right"/>
                         </a>
                     </div>
@@ -116,9 +144,10 @@
             </div>
 
             <t t-if="message == 'updated'">
-                <div class="alert alert-success" role="alert">
-                    Dati del lead aggiornati.
-                </div>
+                <div class="alert alert-success" role="alert">Dati del lead aggiornati.</div>
+            </t>
+            <t t-if="message == 'noted'">
+                <div class="alert alert-success" role="alert">Nota aggiunta.</div>
             </t>
             <t t-if="errors">
                 <div class="alert alert-danger" role="alert">
@@ -128,21 +157,32 @@
                 </div>
             </t>
 
+            <!-- Header + statusbar -->
             <div class="card mb-3">
                 <div class="card-body">
-                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-                        <h4 class="mb-0" t-out="lead.name or 'Lead'"/>
-                        <span t-if="lead.stage_id" class="badge text-bg-primary" t-out="lead.stage_id.name"/>
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <h4 class="mb-0" t-out="lead.name or 'Lead'"/>
+                            <t t-call="qs2_crm_portal.lead_priority_stars"/>
+                        </div>
+                        <small class="text-muted">
+                            Creato il <t t-out="lead.create_date" t-options="{'widget': 'date'}"/>
+                        </small>
                     </div>
-                    <div class="text-muted small mt-1">
-                        Creato il <t t-out="lead.create_date" t-options="{'widget': 'date'}"/>
+                    <div class="o_lead_statusbar">
+                        <t t-foreach="stages" t-as="st">
+                            <t t-set="reached" t-value="current_stage_index &gt;= 0 and st_index &lt;= current_stage_index"/>
+                            <span class="badge rounded-pill"
+                                  t-attf-class="#{('text-bg-success' if st.is_won else 'text-bg-primary') if reached else 'bg-light text-muted border'} #{'fw-bold' if st.id == lead.stage_id.id else ''}"
+                                  t-out="st.name"/>
+                        </t>
                     </div>
                 </div>
             </div>
 
-            <form t-attf-action="/my/leads/#{lead.id}/save" method="post" class="o_portal_lead_form">
+            <!-- Form dati di contatto -->
+            <form t-attf-action="/my/leads/#{lead.id}/save" method="post" class="o_portal_lead_form mb-4">
                 <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-
                 <div class="card">
                     <div class="card-header fw-bold">Dati di contatto</div>
                     <div class="card-body">
@@ -179,7 +219,6 @@
                                        t-att-value="form_values.get('phone')"/>
                             </div>
                         </div>
-
                         <hr/>
                         <div class="row g-3">
                             <div class="col-12">
@@ -231,6 +270,44 @@
                     </div>
                 </div>
             </form>
+
+            <!-- Chatter: cronologia + nuova nota -->
+            <div id="chatter" class="card">
+                <div class="card-header fw-bold">
+                    <i class="fa fa-comments-o me-1"/>Note e messaggi
+                </div>
+                <div class="card-body">
+                    <form t-attf-action="/my/leads/#{lead.id}/note" method="post" class="mb-3">
+                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                        <label class="visually-hidden" for="note_body">Nuova nota</label>
+                        <textarea name="note_body" id="note_body" class="form-control" rows="2"
+                                  placeholder="Scrivi una nota sul lead..." required="required"/>
+                        <div class="text-end mt-2">
+                            <button type="submit" class="btn btn-primary btn-sm">
+                                <i class="fa fa-paper-plane me-1"/>Aggiungi nota
+                            </button>
+                        </div>
+                    </form>
+
+                    <div class="o_lead_chatter">
+                        <t t-if="not messages">
+                            <p class="text-muted mb-0">Nessun messaggio ancora.</p>
+                        </t>
+                        <t t-foreach="messages" t-as="msg">
+                            <div class="o_lead_message">
+                                <span class="o_lead_avatar" t-out="(msg.author_id.name or '?')[:1].upper()"/>
+                                <div class="o_lead_message_body flex-grow-1">
+                                    <div class="d-flex align-items-baseline gap-2">
+                                        <span class="fw-semibold" t-out="msg.author_id.name or 'Sistema'"/>
+                                        <small class="text-muted" t-out="msg.date" t-options="{'widget': 'datetime'}"/>
+                                    </div>
+                                    <div class="text-break" t-out="msg.body"/>
+                                </div>
+                            </div>
+                        </t>
+                    </div>
+                </div>
+            </div>
         </t>
     </template>
 

@@ -8,7 +8,8 @@ limitati ai soli campi elencati — anche via RPC diretto, non solo dal controll
 
 from odoo import api, fields, models, tools
 
-# Campi che un referente portale può MODIFICARE (solo dati di contatto).
+# Campi che un referente portale può MODIFICARE (dati di contatto + la fase,
+# cambiata via drag&drop nella pipeline).
 CRM_LEAD_PORTAL_WRITABLE_FIELDS = frozenset({
     "contact_name",
     "partner_name",
@@ -22,6 +23,7 @@ CRM_LEAD_PORTAL_WRITABLE_FIELDS = frozenset({
     "state_id",
     "country_id",
     "qs2_initiative",
+    "stage_id",
 })
 
 # Campi che un referente portale può LEGGERE: i modificabili + quelli mostrati
@@ -32,11 +34,11 @@ CRM_LEAD_PORTAL_READABLE_FIELDS = CRM_LEAD_PORTAL_WRITABLE_FIELDS | frozenset({
     "id",
     "name",
     "display_name",
-    "stage_id",
     "type",
     "active",
     "color",
     "priority",
+    "tag_ids",
     "create_date",
     "write_date",
     "date_open",
@@ -98,3 +100,23 @@ class CrmLead(models.Model):
         if self.env.context.get("qs2_portal_no_partner_sync"):
             return False
         return super()._get_partner_phone_update(force_void=force_void)
+
+
+# Campi di crm.stage leggibili dal portale: quelli che servono a pipeline e
+# statusbar. Esclude `requirements` ("internal requirements for this stage") e
+# gli altri campi di configurazione, che un portale non deve poter leggere via
+# RPC. Il controller legge le fasi in sudo, quindi i template non sono toccati.
+CRM_STAGE_PORTAL_READABLE_FIELDS = frozenset({
+    "id", "name", "display_name", "sequence", "is_won", "fold", "color",
+})
+
+
+class CrmStage(models.Model):
+    _inherit = "crm.stage"
+
+    def _has_field_access(self, field, operation):
+        if not super()._has_field_access(field, operation):
+            return False
+        if operation == "read" and not self.env.su and self.env.user._is_portal():
+            return field.name in CRM_STAGE_PORTAL_READABLE_FIELDS
+        return True

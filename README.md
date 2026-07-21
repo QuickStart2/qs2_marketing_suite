@@ -136,31 +136,37 @@ Modulo di **sola configurazione**: nessun modello, nessun Python applicativo. Pr
 ---
 
 ### `qs2_crm_portal` — CRM Portal
-**v19.0.1.0.0 · dipende da:** `crm`, `portal`, `qs2_marketing_suite_base`
+**v19.0.1.1.0 · dipende da:** `crm`, `portal`, `qs2_marketing_suite_base`
 
-Porta il CRM agli **utenti portale** con funzionalità ridotta: consultazione dei lead e aggiornamento dei soli dati di contatto, senza accesso al backend. Ogni lead ha un **Referente portale** (`qs2_portal_user_id`, un utente portale, assegnabile dal backend nella tab *Marketing Insights*). Quel referente, dalla sua area riservata, vede solo i lead a lui assegnati.
+Porta il CRM agli **utenti portale** con funzionalità ridotta: una **pipeline kanban** dei propri lead (drag&drop per cambiare fase), aggiornamento dei dati di contatto e un **chatter** per scrivere note, senza accesso al backend. Ogni lead ha un **Referente portale** (`qs2_portal_user_id`, un utente portale, assegnabile dal backend nella tab *Marketing Insights*). Quel referente, dalla sua area riservata, vede solo i lead a lui assegnati.
+
+L'aspetto richiama il backend (colonne per fase con header colorati, card con tag e stelle priorità, statusbar nel dettaglio) tramite uno SCSS di modulo caricato in `web.assets_frontend`; il drag&drop usa un'interazione frontend (`public.interactions`).
 
 Route (tutte `auth="user"`):
 
 | Route | Cosa fa |
 |-------|---------|
 | `/my` | Card "I miei lead" con contatore |
-| `/my/leads` | Pipeline per fase (colonne) + KPI (totali, per fase) |
-| `/my/leads/<id>` | Dettaglio + form di aggiornamento |
-| `/my/leads/<id>/save` | Salvataggio (POST, CSRF) |
+| `/my/leads` | Pipeline kanban per fase (drag&drop) + KPI (totali, vinti) |
+| `/my/leads/<id>` | Dettaglio: statusbar, form contatto, chatter |
+| `/my/leads/<id>/save` | Salvataggio dati di contatto (POST, CSRF) |
+| `/my/leads/<id>/set_stage` | Cambio fase da drag&drop (JSON-RPC) |
+| `/my/leads/<id>/note` | Aggiunta di una nota/commento (POST, CSRF) |
 
-**Cosa può fare il referente:** aggiornare nome contatto, azienda, ruolo, email, telefono, indirizzo (via/città/CAP/provincia/paese) e iniziativa. **Non** può creare né cancellare lead, non vede né tocca i dati commerciali (valore atteso, probabilità, venditore), e lo **stage è in sola lettura** (niente drag&drop: la pipeline è statica).
+**Cosa può fare il referente:** aggiornare nome contatto, azienda, ruolo, email, telefono, indirizzo (via/città/CAP/provincia/paese) e iniziativa; **cambiare la fase** trascinando le schede; **scrivere note** (commenti pubblici) e leggere la cronologia. **Non** può creare né cancellare lead, non vede né tocca i dati commerciali (valore atteso, probabilità, venditore).
 
 **Sicurezza (a più livelli, verificata anche via RPC diretto):**
 - **Righe** — record rule `crm_lead_rule_portal`: il portale vede solo i lead con `qs2_portal_user_id` = sé stesso. È l'**unico punto** da cambiare per adottare un altro perimetro (es. per azienda o team).
-- **Campi in lettura** — `crm.lead._has_field_access`: fuori sudo e per un utente portale, la lettura è limitata a una whitelist; i dati commerciali restano invisibili *anche sui propri lead*, anche via RPC.
-- **Campi in scrittura** — ACL read-only + il salvataggio passa dal controller, che scrive in `sudo()` un dict **solo whitelisted** (anti mass-assignment). Un POST che inietta campi vietati viene ignorato.
-- **No propagazione al partner** — email/telefono si salvano sul lead ma **non** si riversano sul `res.partner` collegato (flag `qs2_portal_no_partner_sync` che neutralizza gli inverse del core): un referente non può modificare un contatto su cui non ha diritti.
+- **Campi in lettura** — `crm.lead._has_field_access` (e analogo su `crm.stage`): la lettura è limitata a una whitelist; i dati commerciali e i campi interni delle fasi (`requirements`) restano invisibili *anche sui propri lead*, anche via RPC.
+- **Campi in scrittura** — ACL read-only; ogni scrittura (contatto, fase, nota) verifica prima l'accesso in lettura sul record NON-sudo e solo dopo scrive in `sudo()` su valori controllati (anti mass-assignment). La fase si cambia solo dalla route dedicata: un POST che inietta `stage_id`/`expected_revenue` nel form viene ignorato.
+- **No propagazione al partner** — email/telefono si salvano sul lead ma **non** si riversano sul `res.partner` collegato (flag `qs2_portal_no_partner_sync`): un referente non può modificare un contatto su cui non ha diritti.
+- **Chatter** — il portale vede solo i commenti pubblici (`mt_comment`, `is_internal=False`): note interne (`mt_note`) e messaggi "Solo dipendenti" restano nascosti. Le note postate hanno autore forzato (non falsificabile) e body escapato (no XSS).
 
 **Da sapere:**
 - Il perimetro scelto è "referente esplicito". Serve popolare `qs2_portal_user_id` sui lead (a mano o via automazione) perché un portale veda qualcosa.
-- Cambiando il paese nel form, l'elenco province si aggiorna al salvataggio; una provincia non coerente col paese scelto viene scartata lato server.
-- L'aspetto è "simile al CRM" ma **non** è il kanban del backend (drag&drop, quick-create, inline edit): quelli vivono nel web client interno, non disponibile ai portali.
+- **Fase "Vinto"**: portare un lead in una fase `is_won` dal portale è **bloccato** di default (ha effetti globali: probabilità, chiusura, scoring PLS, automazioni). Per consentirlo, impostare il parametro di sistema `qs2_crm_portal.allow_portal_won` a `True`.
+- Le note del portale sono **commenti pubblici** (`mt_comment`), non note interne: sono visibili al referente e notificano i follower (il venditore). In Odoo una nota interna vera (`mt_note`) è per design invisibile al portale, quindi non è utilizzabile come canale a due vie.
+- L'aspetto richiama il CRM ma **non** è il kanban del backend (quick-create, inline edit, viste Odoo): quelli vivono nel web client interno, non disponibile ai portali.
 
 ---
 

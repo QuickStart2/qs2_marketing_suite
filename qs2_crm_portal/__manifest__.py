@@ -17,7 +17,7 @@
         - field access (_has_field_access): read/write limitati a una whitelist di
           campi anche via RPC diretto, non solo dal controller.
     """,
-    "version": "19.0.1.0.0",
+    "version": "19.0.1.1.0",
     "category": "Marketing",
     "author": "QuickStart2, Leonardo Guerra",
     "website": "https://www.quickstart2.com",
@@ -33,5 +33,11 @@
         "views/crm_lead_views.xml",
         "views/portal_templates.xml",
     ],
+    "assets": {
+        "web.assets_frontend": [
+            "qs2_crm_portal/static/src/scss/portal_leads.scss",
+            "qs2_crm_portal/static/src/interactions/leads_kanban.js",
+        ],
+    },
     "installable": True,
 }
