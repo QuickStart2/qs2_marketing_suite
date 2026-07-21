@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Assegnazione del referente portale, nella tab "Marketing Insights"
+         creata da qs2_marketing_suite_base: sempre visibile sia per i lead sia
+         per le opportunità (ancorarsi a team_id/user_id li nasconderebbe su uno
+         dei due tipi). Eredita la vista qs2 per garantire che la page esista. -->
+    <record id="crm_lead_view_form_portal_ref" model="ir.ui.view">
+        <field name="name">crm.lead.form.portal.referente</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id"
+               ref="qs2_marketing_suite_base.crm_lead_view_form_inherit_marketing_suite"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='qs2_marketing_insights']//field[@name='qs2_initiative']"
+                   position="after">
+                <field name="qs2_portal_user_id"
+                       widget="many2one_avatar_user"
+                       options="{'no_create': True}"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Filtro e raggruppamento per referente portale -->
+    <record id="view_crm_case_opportunities_filter_portal_ref" model="ir.ui.view">
+        <field name="name">crm.lead.search.portal.referente</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.view_crm_case_opportunities_filter"/>
+        <field name="arch" type="xml">
+            <field name="user_id" position="after">
+                <field name="qs2_portal_user_id"/>
+                <filter name="group_portal_ref" string="Referente portale"
+                        context="{'group_by': 'qs2_portal_user_id'}"/>
+            </field>
+        </field>
+    </record>
+
+</odoo>

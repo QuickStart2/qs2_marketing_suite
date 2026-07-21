@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        PERIMETRO DI ACCESSO — il punto che definisce "chi vede cosa".
+        Un utente portale vede/aggiorna SOLO i lead in cui è il referente
+        (qs2_portal_user_id = sé stesso). Read+write; mai create/unlink.
+
+        Per cambiare la strategia di visibilità (es. per azienda o per team)
+        basta cambiare domain_force qui: controller e template sono
+        perimetro-agnostici, si affidano a questa regola.
+    -->
+    <record id="crm_lead_rule_portal" model="ir.rule">
+        <field name="name">Portale: propri lead (referente portale)</field>
+        <field name="model_id" ref="crm.model_crm_lead"/>
+        <field name="domain_force">[('qs2_portal_user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+</odoo>

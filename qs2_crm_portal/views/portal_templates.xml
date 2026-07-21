@@ -1,0 +1,237 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- =========================================================== -->
+    <!-- Card "I miei lead" nella home del portale                    -->
+    <!-- =========================================================== -->
+    <template id="portal_my_home_lead" name="Portal My Home: Lead"
+              inherit_id="portal.portal_my_home" priority="40">
+        <xpath expr="//div[@id='portal_common_category']" position="inside">
+            <t t-call="portal.portal_docs_entry">
+                <t t-set="icon" t-value="'/portal/static/src/img/portal-addresses.svg'"/>
+                <t t-set="title">I miei lead</t>
+                <t t-set="text">Consulta e aggiorna i tuoi lead</t>
+                <t t-set="url" t-value="'/my/leads'"/>
+                <t t-set="placeholder_count" t-value="'lead_count'"/>
+            </t>
+        </xpath>
+    </template>
+
+    <!-- =========================================================== -->
+    <!-- Pipeline: /my/leads                                          -->
+    <!-- =========================================================== -->
+    <template id="portal_my_leads" name="My Leads">
+        <t t-call="portal.portal_layout">
+            <div class="o_portal_leads">
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <h3 class="mb-0">I miei lead</h3>
+                        <p class="text-muted mb-0">
+                            Consulta i tuoi lead e aggiorna i dati di contatto.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- KPI in cima -->
+                <div class="row g-2 mb-4">
+                    <div class="col-6 col-md-3">
+                        <div class="card h-100 text-center">
+                            <div class="card-body py-3">
+                                <div class="fs-3 fw-bold" t-out="lead_total"/>
+                                <div class="text-muted small">Lead totali</div>
+                            </div>
+                        </div>
+                    </div>
+                    <t t-foreach="columns" t-as="col">
+                        <div class="col-6 col-md-3">
+                            <div class="card h-100 text-center">
+                                <div class="card-body py-3">
+                                    <div class="fs-3 fw-bold" t-out="len(col['leads'])"/>
+                                    <div class="text-muted small text-truncate"
+                                         t-out="col['stage'].name or 'Senza fase'"/>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </div>
+
+                <!-- Colonne pipeline -->
+                <t t-if="not columns">
+                    <div class="alert alert-info" role="alert">
+                        Non hai ancora nessun lead assegnato.
+                    </div>
+                </t>
+                <div t-if="columns" class="d-flex flex-nowrap overflow-auto gap-3 pb-3">
+                    <t t-foreach="columns" t-as="col">
+                        <div class="flex-shrink-0" style="width: 20rem;">
+                            <div class="d-flex align-items-center justify-content-between mb-2 px-1">
+                                <span class="fw-bold text-truncate" t-out="col['stage'].name or 'Senza fase'"/>
+                                <span class="badge text-bg-secondary" t-out="len(col['leads'])"/>
+                            </div>
+                            <t t-foreach="col['leads']" t-as="lead">
+                                <a t-attf-href="/my/leads/#{lead.id}"
+                                   class="card mb-2 text-decoration-none text-reset shadow-sm o_portal_lead_card">
+                                    <div class="card-body py-2 px-3">
+                                        <div class="fw-semibold text-truncate" t-out="lead.name or 'Lead'"/>
+                                        <div t-if="lead.contact_name" class="small text-muted text-truncate"
+                                             t-out="lead.contact_name"/>
+                                        <div t-if="lead.city" class="small text-muted text-truncate">
+                                            <i class="fa fa-map-marker me-1"/><t t-out="lead.city"/>
+                                        </div>
+                                    </div>
+                                </a>
+                            </t>
+                        </div>
+                    </t>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- =========================================================== -->
+    <!-- Dettaglio + form: /my/leads/<id>                             -->
+    <!-- =========================================================== -->
+    <template id="portal_my_lead" name="My Lead">
+        <t t-call="portal.portal_layout">
+            <t t-set="o_portal_fullwidth_alert" groups="base.group_user">
+                <t t-call="portal.portal_back_in_edit_mode">
+                    <t t-set="backend_url" t-value="'/odoo/action-crm.crm_lead_all_leads/%s' % lead.id"/>
+                </t>
+            </t>
+
+            <div class="row mb-2">
+                <div class="col-12 d-flex align-items-center justify-content-between">
+                    <a href="/my/leads" class="btn btn-link px-0">
+                        <i class="fa fa-chevron-left me-1"/>Torna ai lead
+                    </a>
+                    <div class="btn-group" role="group">
+                        <a t-if="prev_id" t-attf-href="/my/leads/#{prev_id}" class="btn btn-outline-secondary btn-sm">
+                            <i class="fa fa-chevron-left"/>
+                        </a>
+                        <a t-if="next_id" t-attf-href="/my/leads/#{next_id}" class="btn btn-outline-secondary btn-sm">
+                            <i class="fa fa-chevron-right"/>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <t t-if="message == 'updated'">
+                <div class="alert alert-success" role="alert">
+                    Dati del lead aggiornati.
+                </div>
+            </t>
+            <t t-if="errors">
+                <div class="alert alert-danger" role="alert">
+                    <ul class="mb-0">
+                        <li t-foreach="errors" t-as="err" t-out="err"/>
+                    </ul>
+                </div>
+            </t>
+
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                        <h4 class="mb-0" t-out="lead.name or 'Lead'"/>
+                        <span t-if="lead.stage_id" class="badge text-bg-primary" t-out="lead.stage_id.name"/>
+                    </div>
+                    <div class="text-muted small mt-1">
+                        Creato il <t t-out="lead.create_date" t-options="{'widget': 'date'}"/>
+                    </div>
+                </div>
+            </div>
+
+            <form t-attf-action="/my/leads/#{lead.id}/save" method="post" class="o_portal_lead_form">
+                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+
+                <div class="card">
+                    <div class="card-header fw-bold">Dati di contatto</div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label" for="contact_name">Nome contatto</label>
+                                <input type="text" class="form-control" id="contact_name" name="contact_name"
+                                       t-att-value="form_values.get('contact_name')"/>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="partner_name">Azienda</label>
+                                <input type="text" class="form-control" id="partner_name" name="partner_name"
+                                       t-att-value="form_values.get('partner_name')"/>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="function">Ruolo</label>
+                                <input type="text" class="form-control" id="function" name="function"
+                                       t-att-value="form_values.get('function')"/>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="qs2_initiative">Iniziativa</label>
+                                <input type="text" class="form-control" id="qs2_initiative" name="qs2_initiative"
+                                       t-att-value="form_values.get('qs2_initiative')"/>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="email_from">Email</label>
+                                <input type="email" name="email_from" id="email_from"
+                                       t-attf-class="form-control #{'is-invalid' if 'email_from' in invalid_fields else ''}"
+                                       t-att-value="form_values.get('email_from')"/>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="phone">Telefono</label>
+                                <input type="text" class="form-control" id="phone" name="phone"
+                                       t-att-value="form_values.get('phone')"/>
+                            </div>
+                        </div>
+
+                        <hr/>
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label" for="street">Indirizzo</label>
+                                <input type="text" class="form-control mb-2" id="street" name="street"
+                                       t-att-value="form_values.get('street')" placeholder="Via e numero"/>
+                                <label class="visually-hidden" for="street2">Indirizzo (seconda riga)</label>
+                                <input type="text" class="form-control" id="street2" name="street2"
+                                       t-att-value="form_values.get('street2')" placeholder="Interno, scala, ..."/>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label" for="city">Città</label>
+                                <input type="text" class="form-control" id="city" name="city"
+                                       t-att-value="form_values.get('city')"/>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label" for="zip">CAP</label>
+                                <input type="text" class="form-control" id="zip" name="zip"
+                                       t-att-value="form_values.get('zip')"/>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label" for="country_id">Paese</label>
+                                <select class="form-select" id="country_id" name="country_id">
+                                    <option value="">—</option>
+                                    <t t-foreach="countries" t-as="country">
+                                        <option t-att-value="country.id"
+                                                t-att-selected="country.id == form_values.get('country_id')"
+                                                t-out="country.name"/>
+                                    </t>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label" for="state_id">Provincia</label>
+                                <select class="form-select" id="state_id" name="state_id">
+                                    <option value="">—</option>
+                                    <t t-foreach="states" t-as="state">
+                                        <option t-att-value="state.id"
+                                                t-att-selected="state.id == form_values.get('state_id')"
+                                                t-out="state.name"/>
+                                    </t>
+                                </select>
+                                <small class="text-muted">Cambia paese e salva per aggiornare l'elenco province.</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer text-end">
+                        <a href="/my/leads" class="btn btn-light">Annulla</a>
+                        <button type="submit" class="btn btn-primary">Salva modifiche</button>
+                    </div>
+                </div>
+            </form>
+        </t>
+    </template>
+
+</odoo>

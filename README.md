@@ -14,6 +14,7 @@ La suite ricostruisce il funnel end-to-end attorno a un unico oggetto: **il lead
 | **Conversazione** | `qs2_whatsapp_bridge` | WhatsApp dentro Odoo, legato al contatto e al lead invece che al telefono del venditore |
 | **Racconto** | `qs2_marketing_insights` | Tab "Storia": timeline unica inserzione → visite → chat → ordini → fatture → vinto/perso |
 | **Aggregato** | `qs2_marketing_reports` | 3 report SQL che ricongiungono lead, piani media e vendite: budget speso contro fatturato |
+| **Condivisione** | `qs2_crm_portal` | Area riservata per referenti esterni: consultano e aggiornano i propri lead da `/my`, senza backend |
 
 Due moduli nel repo stanno **fuori** da questo filo:
 
@@ -134,6 +135,35 @@ Modulo di **sola configurazione**: nessun modello, nessun Python applicativo. Pr
 
 ---
 
+### `qs2_crm_portal` — CRM Portal
+**v19.0.1.0.0 · dipende da:** `crm`, `portal`, `qs2_marketing_suite_base`
+
+Porta il CRM agli **utenti portale** con funzionalità ridotta: consultazione dei lead e aggiornamento dei soli dati di contatto, senza accesso al backend. Ogni lead ha un **Referente portale** (`qs2_portal_user_id`, un utente portale, assegnabile dal backend nella tab *Marketing Insights*). Quel referente, dalla sua area riservata, vede solo i lead a lui assegnati.
+
+Route (tutte `auth="user"`):
+
+| Route | Cosa fa |
+|-------|---------|
+| `/my` | Card "I miei lead" con contatore |
+| `/my/leads` | Pipeline per fase (colonne) + KPI (totali, per fase) |
+| `/my/leads/<id>` | Dettaglio + form di aggiornamento |
+| `/my/leads/<id>/save` | Salvataggio (POST, CSRF) |
+
+**Cosa può fare il referente:** aggiornare nome contatto, azienda, ruolo, email, telefono, indirizzo (via/città/CAP/provincia/paese) e iniziativa. **Non** può creare né cancellare lead, non vede né tocca i dati commerciali (valore atteso, probabilità, venditore), e lo **stage è in sola lettura** (niente drag&drop: la pipeline è statica).
+
+**Sicurezza (a più livelli, verificata anche via RPC diretto):**
+- **Righe** — record rule `crm_lead_rule_portal`: il portale vede solo i lead con `qs2_portal_user_id` = sé stesso. È l'**unico punto** da cambiare per adottare un altro perimetro (es. per azienda o team).
+- **Campi in lettura** — `crm.lead._has_field_access`: fuori sudo e per un utente portale, la lettura è limitata a una whitelist; i dati commerciali restano invisibili *anche sui propri lead*, anche via RPC.
+- **Campi in scrittura** — ACL read-only + il salvataggio passa dal controller, che scrive in `sudo()` un dict **solo whitelisted** (anti mass-assignment). Un POST che inietta campi vietati viene ignorato.
+- **No propagazione al partner** — email/telefono si salvano sul lead ma **non** si riversano sul `res.partner` collegato (flag `qs2_portal_no_partner_sync` che neutralizza gli inverse del core): un referente non può modificare un contatto su cui non ha diritti.
+
+**Da sapere:**
+- Il perimetro scelto è "referente esplicito". Serve popolare `qs2_portal_user_id` sui lead (a mano o via automazione) perché un portale veda qualcosa.
+- Cambiando il paese nel form, l'elenco province si aggiorna al salvataggio; una provincia non coerente col paese scelto viene scartata lato server.
+- L'aspetto è "simile al CRM" ma **non** è il kanban del backend (drag&drop, quick-create, inline edit): quelli vivono nel web client interno, non disponibile ai portali.
+
+---
+
 ### `qs2_whatsapp_bridge` — WhatsApp Bridge
 **Application · v19.0.1.4.1 · dipende da:** `base`, `contacts`, `mail`, `web`, `crm`, `sales_team`
 
@@ -212,9 +242,10 @@ Nessuna configurazione: patcha globalmente il pivot, la voce "Computed Measure" 
 6. **`qs2_lead_webhook`** — la porta d'ingresso dei lead
 7. **`qs2_marketing_insights`** — il più vincolato: richiede base + tracking + whatsapp, e tira dentro `sale`
 8. **`qs2_marketing_reports`** — ultimo: richiede i due OCA. **Post-install manuale** (vedi la sua sezione)
-9. **`qs2_app_message`** — quando vuoi, è indipendente
+9. **`qs2_crm_portal`** — dopo il base QS2: aggiunge l'area portale ai lead
+10. **`qs2_app_message`** — quando vuoi, è indipendente
 
-**Scorciatoia:** installare `qs2_marketing_insights` tira dentro automaticamente base + tracking + whatsapp + sale. Restano fuori solo webhook e reports.
+**Scorciatoia:** installare `qs2_marketing_insights` tira dentro automaticamente base + tracking + whatsapp + sale. Restano fuori solo webhook, reports e portal.
 
 `qs2_web_tracking` e `qs2_whatsapp_bridge` **non** dipendono dal base QS2: sono usabili stand-alone. Presi da soli però i loro dati non confluiscono da nessuna parte — è `qs2_marketing_insights` a ricucirli.
 
@@ -229,6 +260,7 @@ Prima di andare in produzione, i punti che richiedono una scelta consapevole:
 - **`qs2_whatsapp_bridge`** — il microservizio Node **non ha autenticazione**: bind su localhost. La sessione in `bridge/auth_state/` sono credenziali a tutti gli effetti: mai in git. `/whatsapp/qr` è leggibile da ogni utente interno.
 - **`qs2_marketing_reports`** — i report SQL espongono email e telefono dei lead in chiaro a chi ha accesso al report.
 - **`qs2_app_message`** — il gruppo middleware ha read/write su **tutte** le `mail.notification` ed è un utente interno.
+- **`qs2_crm_portal`** — espone i lead a utenti portale: la tenuta dipende dal campo `qs2_portal_user_id` (chi lo popola decide chi vede cosa) e dalla whitelist di campi. Isolamento righe/campi e blocco propagazione al partner sono verificati anche via RPC; il perimetro è un solo `domain_force` da rivedere se cambia la strategia di visibilità.
 
 ---
 
