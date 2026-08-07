@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Lista: il campo active (anche solo nascosto) abilita le azioni
+         Archivia / Annulla archiviazione sulla selezione multipla. -->
+    <record id="utm_source_view_tree" model="ir.ui.view">
+        <field name="name">utm.source.view.list.archive</field>
+        <field name="model">utm.source</field>
+        <field name="inherit_id" ref="utm.utm_source_view_tree"/>
+        <field name="arch" type="xml">
+            <field name="name" position="after">
+                <field name="active" column_invisible="True"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="utm_source_view_form" model="ir.ui.view">
+        <field name="name">utm.source.view.form.archive</field>
+        <field name="model">utm.source</field>
+        <field name="inherit_id" ref="utm.utm_source_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet/group" position="before">
+                <widget name="web_ribbon" title="Archiviato"
+                        bg_color="text-bg-danger" invisible="active"/>
+            </xpath>
+            <field name="name" position="after">
+                <field name="active" widget="boolean_toggle"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="utm_source_view_search" model="ir.ui.view">
+        <field name="name">utm.source.view.search</field>
+        <field name="model">utm.source</field>
+        <field name="arch" type="xml">
+            <search string="Cerca sorgente UTM">
+                <field name="name"/>
+                <separator/>
+                <filter string="Archiviati" name="inactive"
+                        domain="[('active', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- Aggancia la vista di ricerca all'azione standard "Sorgenti". -->
+    <record id="utm.utm_source_action" model="ir.actions.act_window">
+        <field name="search_view_id" ref="utm_source_view_search"/>
+    </record>
+
+</odoo>

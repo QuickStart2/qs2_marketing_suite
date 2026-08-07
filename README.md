@@ -16,8 +16,9 @@ La suite ricostruisce il funnel end-to-end attorno a un unico oggetto: **il lead
 | **Aggregato** | `qs2_marketing_reports` | 3 report SQL che ricongiungono lead, piani media e vendite: budget speso contro fatturato |
 | **Condivisione** | `qs2_crm_portal` | Area riservata per referenti esterni: consultano e aggiornano i propri lead da `/my`, senza backend |
 
-Due moduli nel repo stanno **fuori** da questo filo:
+Tre moduli nel repo stanno **fuori** da questo filo:
 
+- `qs2_utm_source_archive` — utility trasversale su `utm`: non aggiunge una fase al funnel, rende manutenibile l'anagrafica sorgenti che il funnel usa.
 - `qs2_app_message` — modulo indipendente (dipende solo da `mail`), nessun legame con il marketing. Ospitato qui, non parte della suite.
 - `web_pivot_computed_measure` — **modulo OCA di terze parti** vendorizzato nel repo (vedi sotto).
 
@@ -211,6 +212,21 @@ Mini client di posta interno: componi messaggi e recapitali agli utenti (interni
 
 ---
 
+### `qs2_utm_source_archive` — Archiviazione sorgenti UTM
+**Utility · v19.0.1.0.0 · dipende da:** `utm`
+
+> [!NOTE]
+> Utility **trasversale**, fuori dal funnel: non tocca `crm` né i modelli `qs2_*`. Colma una lacuna di Odoo standard su `utm.source`.
+
+In Odoo standard `utm.medium` e `utm.campaign` hanno il campo `active` e sono quindi archiviabili, mentre `utm.source` **no**: una sorgente si può solo cancellare, cosa quasi sempre impossibile perché referenziata da mailing, lead, ordini. Il risultato è un menu a tendina che cresce all'infinito senza modo di ripulirlo. Il modulo aggiunge `active` a `utm.source`, con archiviazione/disarchiviazione da lista (menu Azioni) e da form (interruttore + banda "Archiviato"), più il filtro "Archiviati" agganciato all'azione standard *Sorgenti*. Una sorgente archiviata resta valorizzata sui record che la usano, ma sparisce dai dropdown.
+
+**Da sapere:**
+- **Il `post_init_hook` non è opzionale.** Odoo crea le colonne boolean con `ADD COLUMN ... DEFAULT false`, e PostgreSQL valorizza le righe esistenti a `false`, non a `NULL`; il successivo `_init_column` scrive il default (`True`) solo `WHERE col IS NULL`, quindi non aggancia nulla. Senza l'hook, **all'installazione tutte le sorgenti esistenti risulterebbero archiviate** e sparirebbero dalle viste. L'hook gira solo in fase di *install*, non sugli update: le sorgenti archiviate a mano non vengono riattivate.
+- **Override di `_get_unique_names`.** `utm.source` ha un `UNIQUE(name)` a livello DB che vale anche per i record archiviati, ma il metodo standard cerca i duplicati con `search_read`, soggetto ad `active_test`. Senza il forzamento a `active_test=False`, ricreare il nome di una sorgente archiviata salterebbe il contatore ("Nome [2]") e fallirebbe con `IntegrityError`.
+- Il modulo sovrascrive il `search_view_id` dell'azione `utm.utm_source_action` (record di un altro modulo): alla disinstallazione la view di ricerca viene rimossa ma il riferimento sull'azione resta.
+
+---
+
 ### `web_pivot_computed_measure` — Web Pivot Computed Measure
 **Terze parti (OCA) · v19.0.1.0.0 · dipende da:** `web`
 
@@ -250,6 +266,7 @@ Nessuna configurazione: patcha globalmente il pivot, la voce "Computed Measure" 
 8. **`qs2_marketing_reports`** — ultimo: richiede i due OCA. **Post-install manuale** (vedi la sua sezione)
 9. **`qs2_crm_portal`** — dopo il base QS2: aggiunge l'area portale ai lead
 10. **`qs2_app_message`** — quando vuoi, è indipendente
+11. **`qs2_utm_source_archive`** — quando vuoi, dipende solo da `utm` (già tirato dentro dal base QS2)
 
 **Scorciatoia:** installare `qs2_marketing_insights` tira dentro automaticamente base + tracking + whatsapp + sale. Restano fuori solo webhook, reports e portal.
 
