@@ -1,3 +1,5 @@
+from markupsafe import Markup
+
 from odoo import http
 from odoo.http import request
 
@@ -15,10 +17,11 @@ class LeadWebhookAssist(http.Controller):
         data_e_ora_inizio = post.get("data_e_ora_inizio")
         data_e_ora_fine = post.get("data_e_ora_fine")
 
-        description = ""
-        for field in post.keys():
-            if post[field]:
-                description += field + ": " + post[field] + "\n<br>"
+        # Chiavi e valori arrivano da un POST anonimo: nella descrizione (HTML)
+        # vanno come testo escapato, mai come markup.
+        description = Markup("").join(
+            Markup("%s: %s\n<br>") % (field, value) for field, value in post.items() if value
+        )
 
         if not nome_cliente:
             return "Error"

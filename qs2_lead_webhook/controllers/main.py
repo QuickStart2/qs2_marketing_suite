@@ -13,6 +13,8 @@ L'assegnazione a venditore/team passa dal motore di regole
 
 import logging
 
+from markupsafe import Markup
+
 from odoo import http
 from odoo.http import request
 
@@ -78,7 +80,11 @@ class LeadWebhookMain(http.Controller):
 
         # Descrizione: serializzazione di tutti i campi extra ricevuti.
         # Utile per debug / dati custom non mappati nello schema qs2.
-        description = "\n".join(f"{k}: {v}" for k, v in post.items() if v)
+        # Il POST è anonimo: chiavi e valori vanno nell'HTML come testo escapato,
+        # una riga per campo.
+        description = Markup("<br>\n").join(
+            Markup("%s: %s") % (k, v) for k, v in post.items() if v
+        )
 
         # Routing del lead: prima regola che matcha
         # (qs2.lead.routing.rule), poi fallback al parametro globale.
